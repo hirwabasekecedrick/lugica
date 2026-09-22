@@ -2,10 +2,10 @@
 
 import React from "react";
 
-export default function LeadpagesLogo({ className = "" }: { className?: string }) {
+export default function LugicaLogo({ className = "" }: { className?: string }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      {/* Leadpages Brand Icon */}
+      {/* Lugica Brand Icon */}
       <div className="relative w-8 h-8 flex items-center justify-center">
         <svg
           viewBox="0 0 36 36"
@@ -13,7 +13,7 @@ export default function LeadpagesLogo({ className = "" }: { className?: string }
           xmlns="http://www.w3.org/2000/svg"
           className="w-full h-full drop-shadow-[0_0_10px_rgba(34,197,94,0.4)]"
         >
-          {/* Main green overlapping rounded squares/rectangles */}
+          {/* Green overlapping rounded squares icon */}
           <rect
             x="4"
             y="12"
@@ -43,7 +43,7 @@ export default function LeadpagesLogo({ className = "" }: { className?: string }
 
       {/* Brand Name */}
       <span className="text-white font-bold text-xl tracking-tight font-sans">
-        Leadpages<span className="text-[10px] align-top text-gray-400 font-normal ml-0.5">®</span>
+        Lugica<span className="text-[10px] align-top text-gray-400 font-normal ml-0.5">®</span>
       </span>
     </div>
   );

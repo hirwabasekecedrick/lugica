@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import LeadpagesLogo from "./LeadpagesLogo";
+import LugicaLogo from "./LugicaLogo";
 
 export default function LoginCard() {
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -27,11 +27,11 @@ export default function LoginCard() {
       showToast("Please enter a valid email address.");
       return;
     }
-    showToast(isSignUp ? `Creating account for ${email}...` : `Signing in as ${email}...`);
+    showToast(isSignUp ? `Creating tracking account for ${email}...` : `Connecting to live delivery dashboard for ${email}...`);
   };
 
   return (
-    <div className="relative w-full max-w-[440px] bg-[#0c0e14]/90 backdrop-blur-xl border border-[#23283a] rounded-[28px] p-8 sm:p-10 shadow-2xl flex flex-col justify-between transition-all">
+    <div className="relative w-full max-w-[440px] h-full max-h-[600px] bg-[#0c0e14]/90 backdrop-blur-xl border border-[#23283a] rounded-[28px] p-6 sm:p-8 shadow-2xl flex flex-col justify-between transition-all">
       {/* Toast alert */}
       {toastMessage && (
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#1e2436] text-white text-xs px-4 py-2 rounded-full border border-emerald-500/40 shadow-lg flex items-center gap-2 animate-bounce z-50 whitespace-nowrap">
@@ -40,30 +40,30 @@ export default function LoginCard() {
         </div>
       )}
 
-      <div>
+      <div className="flex flex-col justify-center my-auto">
         {/* Top Logo */}
-        <div className="flex justify-center mb-8">
-          <LeadpagesLogo />
+        <div className="flex justify-center mb-6">
+          <LugicaLogo />
         </div>
 
-        {/* Heading */}
-        <h1 className="text-3xl sm:text-[34px] font-extrabold text-white tracking-tight leading-[1.15] text-center mb-2">
-          {isSignUp ? "Start converting\nvisitors today." : "Build pages\nthat convert."}
+        {/* Heading tailored for real-time delivery tracking */}
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-[1.15] text-center mb-1.5">
+          {isSignUp ? "Start tracking\nyour shipments." : "Track deliveries\nin real time."}
         </h1>
 
         {/* Subtitle */}
-        <p className="text-gray-400 text-sm text-center mb-8 font-normal">
-          {isSignUp ? "Create your Leadpages account" : "Sign in to continue"}
+        <p className="text-gray-400 text-sm text-center mb-6 font-normal">
+          {isSignUp ? "Create your Lugica delivery account" : "Sign in to track your courier live on map"}
         </p>
 
         {!showEmailForm ? (
           /* OAuth & Email Options */
-          <div className="space-y-3.5">
+          <div className="space-y-3">
             {/* Google button */}
             <button
               onClick={() => handleSocialClick("Google")}
               type="button"
-              className="w-full py-3.5 px-4 flex items-center justify-center gap-3 bg-[#161822] hover:bg-[#1e2230] text-white font-medium text-sm rounded-xl border border-[#272d3e] hover:border-[#38415a] transition-all duration-200 cursor-pointer group shadow-sm active:scale-[0.99]"
+              className="w-full py-3 px-4 flex items-center justify-center gap-3 bg-[#161822] hover:bg-[#1e2230] text-white font-medium text-sm rounded-xl border border-[#272d3e] hover:border-[#38415a] transition-all duration-200 cursor-pointer group shadow-sm active:scale-[0.99]"
             >
               {/* Google SVG Icon */}
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -91,7 +91,7 @@ export default function LoginCard() {
             <button
               onClick={() => handleSocialClick("GitHub")}
               type="button"
-              className="w-full py-3.5 px-4 flex items-center justify-center gap-3 bg-[#161822] hover:bg-[#1e2230] text-white font-medium text-sm rounded-xl border border-[#272d3e] hover:border-[#38415a] transition-all duration-200 cursor-pointer group shadow-sm active:scale-[0.99]"
+              className="w-full py-3 px-4 flex items-center justify-center gap-3 bg-[#161822] hover:bg-[#1e2230] text-white font-medium text-sm rounded-xl border border-[#272d3e] hover:border-[#38415a] transition-all duration-200 cursor-pointer group shadow-sm active:scale-[0.99]"
             >
               {/* GitHub SVG Icon */}
               <svg className="w-5 h-5 fill-current text-white" viewBox="0 0 24 24">
@@ -101,7 +101,7 @@ export default function LoginCard() {
             </button>
 
             {/* Divider */}
-            <div className="relative flex items-center justify-center my-5">
+            <div className="relative flex items-center justify-center my-4">
               <div className="border-t border-[#232838] w-full" />
               <span className="bg-[#0c0e14] px-3 text-xs text-gray-500 font-medium absolute">
                 or
@@ -112,7 +112,7 @@ export default function LoginCard() {
             <button
               onClick={() => setShowEmailForm(true)}
               type="button"
-              className="w-full py-3.5 px-4 flex items-center justify-center gap-3 bg-[#161822] hover:bg-[#1e2230] text-white font-medium text-sm rounded-xl border border-[#272d3e] hover:border-[#38415a] transition-all duration-200 cursor-pointer group shadow-sm active:scale-[0.99]"
+              className="w-full py-3 px-4 flex items-center justify-center gap-3 bg-[#161822] hover:bg-[#1e2230] text-white font-medium text-sm rounded-xl border border-[#272d3e] hover:border-[#38415a] transition-all duration-200 cursor-pointer group shadow-sm active:scale-[0.99]"
             >
               {/* Mail SVG Icon */}
               <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -123,36 +123,36 @@ export default function LoginCard() {
           </div>
         ) : (
           /* Email Input Form */
-          <form onSubmit={handleSubmit} className="space-y-4 animate-fadeIn">
+          <form onSubmit={handleSubmit} className="space-y-3.5 animate-fadeIn">
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Email Address</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
               <input
                 type="email"
                 required
                 placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#161822] border border-[#272d3e] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-500 outline-none transition-all"
+                className="w-full bg-[#161822] border border-[#272d3e] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-500 outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Password</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Password</label>
               <input
                 type="password"
                 required
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#161822] border border-[#272d3e] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-500 outline-none transition-all"
+                className="w-full bg-[#161822] border border-[#272d3e] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-500 outline-none transition-all"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition-all shadow-lg shadow-emerald-950/40 active:scale-[0.99] cursor-pointer mt-2"
+              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition-all shadow-lg shadow-emerald-950/40 active:scale-[0.99] cursor-pointer mt-1"
             >
-              {isSignUp ? "Create Account" : "Sign In"}
+              {isSignUp ? "Create Tracking Account" : "Access Live Tracking"}
             </button>
 
             <button
@@ -167,9 +167,9 @@ export default function LoginCard() {
       </div>
 
       {/* Footer link */}
-      <div className="mt-8 pt-4 text-center">
+      <div className="pt-3 text-center border-t border-[#1e2332]/40">
         <p className="text-xs text-gray-400">
-          {isSignUp ? "Already have an account? " : "Don't have an account? "}
+          {isSignUp ? "Already registered? " : "New to Lugica Delivery? "}
           <button
             type="button"
             onClick={() => setIsSignUp(!isSignUp)}
