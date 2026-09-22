@@ -5,22 +5,22 @@ import React from "react";
 export default function LugicaLogo({ className = "" }: { className?: string }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      {/* Lugica Brand Icon */}
+      {/* Lugica Express Delivery Icon */}
       <div className="relative w-8 h-8 flex items-center justify-center">
         <svg
           viewBox="0 0 36 36"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full drop-shadow-[0_0_10px_rgba(34,197,94,0.4)]"
+          className="w-full h-full drop-shadow-[0_0_12px_rgba(160,213,133,0.45)]"
         >
-          {/* Green overlapping rounded squares icon */}
+          {/* Outer delivery route node */}
           <rect
             x="4"
             y="12"
             width="16"
             height="16"
             rx="4.5"
-            fill="#22C55E"
+            fill="#A0D585"
           />
           <rect
             x="14"
@@ -28,23 +28,27 @@ export default function LugicaLogo({ className = "" }: { className?: string }) {
             width="16"
             height="16"
             rx="4.5"
-            fill="#16A34A"
+            fill="#6984A9"
           />
-          <rect
-            x="14"
-            y="14"
-            width="8"
-            height="8"
-            rx="2"
-            fill="#4ADE80"
+          {/* Inner GPS marker point */}
+          <circle
+            cx="18"
+            cy="18"
+            r="4"
+            fill="#EEFABD"
           />
         </svg>
       </div>
 
-      {/* Brand Name */}
-      <span className="text-white font-bold text-xl tracking-tight font-sans">
-        Lugica<span className="text-[10px] align-top text-gray-400 font-normal ml-0.5">®</span>
-      </span>
+      {/* Brand Name with Delivery Tag */}
+      <div className="flex flex-col leading-none">
+        <span className="text-white font-bold text-xl tracking-tight font-sans flex items-center gap-1">
+          Lugica<span className="text-[10px] align-top text-[#A0D585] font-semibold">®</span>
+        </span>
+        <span className="text-[9px] uppercase tracking-widest text-[#6984A9] font-bold mt-0.5">
+          Delivery Express
+        </span>
+      </div>
     </div>
   );
 }
