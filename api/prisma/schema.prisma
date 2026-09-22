@@ -7,12 +7,185 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AccountStatus {
-  ACTIVE
-  INACTIVE
-  DELETED
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  DRIVER
+  CLIENT
 }
 
-model Users {
-  
+enum VehicleOwnership {
+  COMPANY
+  INDIVIDUAL
+}
+
+enum VehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+  FAILED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  name         String
+  role         Role     @default(CLIENT)
+  isActive     Boolean  @default(true)
+  /// Only relevant for drivers; nullable for other roles
+  licenseNumber String?
+  /// Only relevant for drivers; nullable for other roles
+  isAvailable   Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  deliveriesAsClient Delivery[]          @relation("ClientDeliveries")
+  deliveriesAsDriver Delivery[]          @relation("DriverDeliveries")
+  ownedVehicles      Vehicle[]           @relation("VehicleOwner")
+  assignedVehicles   Vehicle[]           @relation("VehicleAssignedDriver")
+  vehicleAssignments VehicleAssignment[] @relation("DriverAssignments")
+  refreshTokens      RefreshToken[]
+  driverLocations    DriverLocation[]
+  statusChanges      DeliveryStatusHistory[] @relation("StatusChangedBy")
+
+  @@map("users")
+}
+
+model Vehicle {
+  id             String           @id @default(uuid())
+  plateNumber    String           @unique
+  type           String
+  capacity       Float
+  ownershipType  VehicleOwnership
+  /// Required when ownershipType = INDIVIDUAL, must be null when COMPANY
+  ownedByDriverId String?
+  /// Currently operating driver
+  assignedDriverId String?
+  status         VehicleStatus    @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ownedByDriver    User?               @relation("VehicleOwner", fields: [ownedByDriverId], references: [id])
+  assignedDriver   User?               @relation("VehicleAssignedDriver", fields: [assignedDriverId], references: [id])
+  assignments      VehicleAssignment[]
+  deliveries       Delivery[]
+
+  @@map("vehicles")
+}
+
+model VehicleAssignment {
+  id           String    @id @default(uuid())
+  vehicleId    String
+  driverId     String
+  assignedAt   DateTime  @default(now())
+  unassignedAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  driver  User    @relation("DriverAssignments", fields: [driverId], references: [id])
+
+  @@index([vehicleId, unassignedAt])
+  @@map("vehicle_assignments")
+}
+
+model Delivery {
+  id             String         @id @default(uuid())
+  clientId       String
+  driverId       String?
+  vehicleId      String?
+  pickupAddress  String
+  // NOTE: Using Float for lat/lng for now. Future upgrade path: PostGIS geography
+  // columns if proximity queries (nearest driver, geofencing) become a requirement.
+  pickupLat      Float
+  pickupLng      Float
+  dropoffAddress String
+  dropoffLat     Float
+  dropoffLng     Float
+  status         DeliveryStatus @default(PENDING)
+  estimatedDeliveryAt DateTime?
+  deliveredAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  client        User                    @relation("ClientDeliveries", fields: [clientId], references: [id])
+  driver        User?                   @relation("DriverDeliveries", fields: [driverId], references: [id])
+  vehicle       Vehicle?                @relation(fields: [vehicleId], references: [id])
+  statusHistory DeliveryStatusHistory[]
+  driverLocations DriverLocation[]
+
+  @@index([status])
+  @@index([clientId])
+  @@index([driverId])
+  @@map("deliveries")
+}
+
+model DeliveryStatusHistory {
+  id              String          @id @default(uuid())
+  deliveryId      String
+  fromStatus      DeliveryStatus?
+  toStatus        DeliveryStatus
+  changedByUserId String
+  notes           String?
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  delivery  Delivery @relation(fields: [deliveryId], references: [id])
+  changedBy User     @relation("StatusChangedBy", fields: [changedByUserId], references: [id])
+
+  @@map("delivery_status_history")
+}
+
+model DriverLocation {
+  id         String   @id @default(uuid())
+  driverId   String
+  deliveryId String?
+  // NOTE: Using Float for lat/lng for now. Future upgrade path: PostGIS geography
+  // columns if proximity queries (nearest driver, geofencing) become a requirement.
+  latitude   Float
+  longitude  Float
+  accuracy   Float?
+  recordedAt DateTime @default(now())
+
+  // Relations
+  driver   User      @relation(fields: [driverId], references: [id])
+  delivery Delivery? @relation(fields: [deliveryId], references: [id])
+
+  @@index([driverId, recordedAt(sort: Desc)])
+  @@index([deliveryId, recordedAt(sort: Desc)])
+  @@map("driver_locations")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("refresh_tokens")
 }
