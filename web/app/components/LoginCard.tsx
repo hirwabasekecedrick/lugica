@@ -65,7 +65,7 @@ export default function LoginCard() {
   };
 
   return (
-    <div className="relative w-full max-w-[440px] h-full max-h-[600px] bg-[#131d33]/90 backdrop-blur-xl border border-[#2c426f] rounded-[28px] p-6 sm:p-8 shadow-2xl flex flex-col justify-between transition-all">
+    <div className="relative w-full max-w-[440px] bg-[#131d33]/90 backdrop-blur-xl border border-[#2c426f] rounded-[28px] p-6 sm:p-8 shadow-2xl flex flex-col justify-between transition-all my-auto">
 
       {toastMessage && (
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#1f3054] text-[#EEFABD] text-xs px-4 py-2 rounded-full border border-[#A0D585]/50 shadow-lg flex items-center gap-2 animate-bounce z-50 whitespace-nowrap">
