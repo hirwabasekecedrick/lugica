@@ -19,15 +19,15 @@ const recommendedActions = [
 
 export default function InventoryContent() {
   return (
-    <div className="flex-1 overflow-y-auto px-7 pb-10 space-y-6">
+    <div className="flex-1 overflow-y-auto px-7 pb-10 space-y-6 inventory-scroll">
 
       {/* ── PERFORMANCE OVERVIEW ─────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[#4a4b60] text-[11px] font-semibold uppercase tracking-widest">
+          <span className="text-[#6984A9] text-[11px] font-semibold uppercase tracking-widest">
             Performance Overview
           </span>
-          <button className="flex items-center gap-1 text-[#8b8c9e] hover:text-white text-xs transition-colors cursor-pointer">
+          <button className="flex items-center gap-1 text-[#6984A9] hover:text-[#EEFABD] text-xs transition-colors cursor-pointer">
             Full report
             <ExternalLinkIcon className="w-3 h-3" />
           </button>
@@ -36,20 +36,20 @@ export default function InventoryContent() {
           {perfCards.map((card) => (
             <div
               key={card.label}
-              className="bg-[#15161f] border border-[#222330] rounded-xl p-4 flex flex-col gap-2"
+              className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-4 flex flex-col gap-2"
             >
-              <div className="flex items-center gap-2 text-[#6b6c80]">
+              <div className="flex items-center gap-2 text-[#6984A9]">
                 <card.icon className="w-4 h-4" />
                 <span className="text-xs font-medium">{card.label}</span>
               </div>
               <p className="text-white text-2xl font-bold">{card.value}</p>
               {card.noteType === "upgrade" ? (
-                <button className="flex items-center gap-1 text-[#b5a0f5] text-xs hover:text-[#d4c7ff] transition-colors cursor-pointer w-fit">
+                <button className="flex items-center gap-1 text-[#A0D585] text-xs hover:text-[#EEFABD] transition-colors cursor-pointer w-fit font-medium">
                   <UpgradeIcon className="w-3 h-3" />
                   Upgrade
                 </button>
               ) : (
-                <span className="text-[#4a4b60] text-xs">{card.note}</span>
+                <span className="text-[#6984A9]/70 text-xs">{card.note}</span>
               )}
             </div>
           ))}
@@ -58,20 +58,19 @@ export default function InventoryContent() {
 
       {/* ── PRIMARY INSIGHT CTA ───────────────────────────────── */}
       <section>
-        <div className="bg-gradient-to-r from-[#1e1a3a] via-[#1f1a3c] to-[#1a1b3a] border border-[#3a3060] rounded-xl p-5 flex items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-[#131e36] via-[#1a2b4c] to-[#131e36] border border-[#263B6A] rounded-xl p-5 flex items-center justify-between gap-4 shadow-lg shadow-[#080d18]/50">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <SparkleIcon className="w-4 h-4 text-[#b5a0f5]" />
-              <span className="text-[#b5a0f5] text-xs font-semibold uppercase tracking-wide">
+              <span className="text-[#A0D585] text-xs font-semibold uppercase tracking-wide">
                 Primary Insight
               </span>
             </div>
-            <h2 className="text-white text-lg font-bold mb-1">Let&apos;s get you started</h2>
-            <p className="text-[#8b8c9e] text-sm">
+            <h2 className="text-[#EEFABD] text-lg font-bold mb-1">Let&apos;s get you started</h2>
+            <p className="text-[#6984A9] text-sm">
               Create your first page and start building your audience.
             </p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#6c4dd6] hover:bg-[#7c5de6] text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer flex-shrink-0">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] text-sm font-bold rounded-lg transition-colors cursor-pointer flex-shrink-0 shadow-md">
             Create a page
             <ExternalLinkIcon className="w-3.5 h-3.5" />
           </button>
@@ -80,12 +79,10 @@ export default function InventoryContent() {
 
       {/* ── INSIGHTS WARMING UP ───────────────────────────────── */}
       <section>
-        <div className="bg-[#15161f] border border-[#222330] rounded-xl p-6 flex flex-col items-center text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[#6c4dd6]/20 border border-[#6c4dd6]/30 flex items-center justify-center mb-4">
-            <SparkleIcon className="w-7 h-7 text-[#b5a0f5]" />
-          </div>
-          <h3 className="text-white text-base font-bold mb-2">Your insights are warming up</h3>
-          <p className="text-[#6b6c80] text-sm max-w-xs mb-5">
+        <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-6 flex flex-col items-center text-center">
+          
+          <h3 className="text-[#EEFABD] text-base font-bold mb-2">Your insights are warming up</h3>
+          <p className="text-[#6984A9] text-sm max-w-xs mb-5">
             Publish a page and share it — we&apos;ll spot opportunities and surface your next best actions as visitors start arriving.
           </p>
           {/* Faint chart line */}
@@ -93,8 +90,8 @@ export default function InventoryContent() {
             <svg viewBox="0 0 400 48" className="w-full h-full" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6c4dd6" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#6c4dd6" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#A0D585" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#A0D585" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path
@@ -104,8 +101,8 @@ export default function InventoryContent() {
               <path
                 d="M0 40 C50 38 100 36 150 32 C200 28 250 26 300 30 C350 34 380 36 400 34"
                 fill="none"
-                stroke="#6c4dd6"
-                strokeOpacity="0.5"
+                stroke="#A0D585"
+                strokeOpacity="0.6"
                 strokeWidth="1.5"
               />
             </svg>
@@ -115,9 +112,9 @@ export default function InventoryContent() {
             {["Traffic alerts", "Conversion tips", "A/B test ideas"].map((chip) => (
               <button
                 key={chip}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e1f30] border border-[#2a2b3d] hover:border-[#3a3b50] text-[#8b8c9e] hover:text-white text-xs font-medium rounded-full transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#131e36] border border-[#263B6A] hover:border-[#6984A9] text-[#6984A9] hover:text-[#EEFABD] text-xs font-medium rounded-full transition-colors cursor-pointer"
               >
-                <ChipDotIcon className="w-3 h-3 text-[#6c4dd6]" />
+                <ChipDotIcon className="w-3 h-3 text-[#A0D585]" />
                 {chip}
               </button>
             ))}
@@ -127,43 +124,43 @@ export default function InventoryContent() {
 
       {/* ── PERFORMANCE: Top Pages + Analytics ───────────────── */}
       <section>
-        <p className="text-[#4a4b60] text-[11px] font-semibold uppercase tracking-widest mb-3">
+        <p className="text-[#6984A9] text-[11px] font-semibold uppercase tracking-widest mb-3">
           Performance
         </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Top Pages */}
-          <div className="bg-[#15161f] border border-[#222330] rounded-xl p-5 min-h-[180px] flex flex-col">
+          <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 min-h-[180px] flex flex-col">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-[#6b6c80]">
+              <div className="flex items-center gap-2 text-[#6984A9]">
                 <BarChartIcon className="w-4 h-4" />
                 <span className="text-xs font-semibold uppercase tracking-wide">Top Pages</span>
               </div>
-              <button className="flex items-center gap-1 text-[#8b8c9e] hover:text-white text-xs transition-colors cursor-pointer">
+              <button className="flex items-center gap-1 text-[#6984A9] hover:text-[#EEFABD] text-xs transition-colors cursor-pointer">
                 View all
                 <ExternalLinkIcon className="w-3 h-3" />
               </button>
             </div>
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center">
-              <BarEmptyIcon className="w-10 h-10 text-[#2a2b3d]" />
-              <p className="text-[#4a4b60] text-sm">Your top pages will be ranked here</p>
+              <BarEmptyIcon className="w-10 h-10 text-[#263B6A]" />
+              <p className="text-[#6984A9] text-sm">Your top pages will be ranked here</p>
             </div>
           </div>
 
           {/* Analytics */}
-          <div className="bg-[#15161f] border border-[#222330] rounded-xl p-5 min-h-[180px] flex flex-col">
+          <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 min-h-[180px] flex flex-col">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-[#6b6c80]">
+              <div className="flex items-center gap-2 text-[#6984A9]">
                 <LineChartIcon className="w-4 h-4" />
                 <span className="text-xs font-semibold uppercase tracking-wide">Analytics</span>
               </div>
-              <button className="flex items-center gap-1 text-[#8b8c9e] hover:text-white text-xs transition-colors cursor-pointer">
+              <button className="flex items-center gap-1 text-[#6984A9] hover:text-[#EEFABD] text-xs transition-colors cursor-pointer">
                 Full report
                 <ExternalLinkIcon className="w-3 h-3" />
               </button>
             </div>
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center">
-              <BarEmptyIcon className="w-10 h-10 text-[#2a2b3d]" />
-              <p className="text-[#4a4b60] text-sm">Analytics appear after your first page view</p>
+              <BarEmptyIcon className="w-10 h-10 text-[#263B6A]" />
+              <p className="text-[#6984A9] text-sm">Analytics appear after your first page view</p>
             </div>
           </div>
         </div>
@@ -171,27 +168,27 @@ export default function InventoryContent() {
 
       {/* ── GROWTH ───────────────────────────────────────────── */}
       <section>
-        <p className="text-[#4a4b60] text-[11px] font-semibold uppercase tracking-widest mb-3">
+        <p className="text-[#6984A9] text-[11px] font-semibold uppercase tracking-widest mb-3">
           Growth
         </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Recommended Actions */}
-          <div className="bg-[#15161f] border border-[#222330] rounded-xl p-5">
+          <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-semibold uppercase tracking-wide text-[#6b6c80]">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#6984A9]">
                 Recommended Actions
               </span>
-              <span className="text-[#4a4b60] text-xs">0/3 done</span>
+              <span className="text-[#6984A9]/70 text-xs">0/3 done</span>
             </div>
             <ul className="space-y-2">
               {recommendedActions.map((action) => (
                 <li key={action.label}>
-                  <button className="w-full flex items-center justify-between px-3 py-3 bg-[#1a1b28] hover:bg-[#1e1f30] border border-[#2a2b3d] hover:border-[#3a3b50] rounded-lg transition-colors group cursor-pointer">
+                  <button className="w-full flex items-center justify-between px-3 py-3 bg-[#131e36] hover:bg-[#1a2b4c] border border-[#263B6A] hover:border-[#6984A9] rounded-lg transition-colors group cursor-pointer text-left">
                     <div className="flex items-center gap-2.5">
-                      <CheckCircleEmptyIcon className="w-4 h-4 text-[#3a3b50]" />
-                      <span className="text-[#c0c1d4] text-sm font-medium">{action.label}</span>
+                      <CheckCircleEmptyIcon className="w-4 h-4 text-[#6984A9]/60 group-hover:text-[#A0D585]" />
+                      <span className="text-[#EEFABD] text-sm font-medium">{action.label}</span>
                     </div>
-                    <ExternalLinkIcon className="w-3.5 h-3.5 text-[#4a4b60] group-hover:text-[#8b8c9e] transition-colors" />
+                    <ExternalLinkIcon className="w-3.5 h-3.5 text-[#6984A9] group-hover:text-[#EEFABD] transition-colors" />
                   </button>
                 </li>
               ))}
@@ -199,13 +196,13 @@ export default function InventoryContent() {
           </div>
 
           {/* Wins & Momentum */}
-          <div className="bg-[#15161f] border border-[#222330] rounded-xl p-5 flex flex-col items-center justify-center text-center min-h-[180px]">
-            <p className="text-[#4a4b60] text-[11px] font-semibold uppercase tracking-widest self-start mb-4">
+          <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 flex flex-col items-center justify-center text-center min-h-[180px]">
+            <p className="text-[#6984A9] text-[11px] font-semibold uppercase tracking-widest self-start mb-4">
               Wins &amp; Momentum
             </p>
-            <StarIcon className="w-10 h-10 text-[#d4a017] mb-3" />
-            <h3 className="text-white text-sm font-bold mb-1">Your first win is coming</h3>
-            <p className="text-[#4a4b60] text-xs">
+            <StarIcon className="w-10 h-10 text-[#EEFABD] mb-3" />
+            <h3 className="text-[#EEFABD] text-sm font-bold mb-1">Your first win is coming</h3>
+            <p className="text-[#6984A9] text-xs">
               Publish and share a page to start earning achievements
             </p>
           </div>

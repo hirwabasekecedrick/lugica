@@ -25,10 +25,10 @@ export default function InventoryTopBar() {
     <header className="flex-shrink-0 px-7 pt-6 pb-4 flex items-start justify-between gap-4">
       {/* Left: greeting */}
       <div>
-        <h1 className="text-white text-2xl font-bold tracking-tight">
-          Good {greeting}, Maurice 👋
+        <h1 className="text-[#EEFABD] text-2xl font-bold tracking-tight">
+          Good {greeting}, Maurice
         </h1>
-        <p className="text-[#6b6c80] text-sm mt-0.5">
+        <p className="text-[#6984A9] text-sm mt-0.5">
           {dayName}, {monthName} {day}
         </p>
       </div>
@@ -36,20 +36,20 @@ export default function InventoryTopBar() {
       {/* Right: tabs + date picker + customize */}
       <div className="flex items-center gap-3 flex-shrink-0">
         {/* Tab group */}
-        <div className="flex items-center bg-[#1a1b28] border border-[#2a2b3d] rounded-lg p-0.5 gap-0.5">
+        <div className="flex items-center bg-[#0d1525] border border-[#263B6A] rounded-lg p-0.5 gap-0.5">
           {tabs.map((tab) => (
             <button
               key={tab.label}
               onClick={() => !tab.soon && setActiveTab(tab.label)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
                 activeTab === tab.label && !tab.soon
-                  ? "bg-[#2d2e44] text-white shadow"
-                  : "text-[#6b6c80] hover:text-white"
+                  ? "bg-[#263B6A] text-[#EEFABD] shadow"
+                  : "text-[#6984A9] hover:text-[#EEFABD]"
               } ${tab.soon ? "cursor-default" : "cursor-pointer"}`}
             >
               {tab.label}
               {tab.soon && (
-                <span className="text-[9px] font-bold bg-[#2d2e44] text-[#6b6c80] px-1 py-0.5 rounded uppercase tracking-wide">
+                <span className="text-[9px] font-bold bg-[#263B6A] text-[#6984A9] px-1 py-0.5 rounded uppercase tracking-wide">
                   Soon
                 </span>
               )}
@@ -61,19 +61,21 @@ export default function InventoryTopBar() {
         <div className="relative">
           <button
             onClick={() => setDateOpen(!dateOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1b28] border border-[#2a2b3d] rounded-lg text-[#c0c1d4] text-xs font-medium hover:border-[#3a3b50] transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#0d1525] border border-[#263B6A] rounded-lg text-[#6984A9] text-xs font-medium hover:border-[#6984A9] hover:text-[#EEFABD] transition-colors cursor-pointer"
           >
             {dateRange}
-            <ChevronDownIcon className="w-3 h-3 text-[#6b6c80]" />
+            <ChevronDownIcon className="w-3 h-3" />
           </button>
           {dateOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-[#1a1b28] border border-[#2a2b3d] rounded-lg shadow-xl z-50 min-w-[140px] overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 bg-[#0d1525] border border-[#263B6A] rounded-lg shadow-xl z-50 min-w-[140px] overflow-hidden">
               {dateRanges.map((r) => (
                 <button
                   key={r}
                   onClick={() => { setDateRange(r); setDateOpen(false); }}
                   className={`w-full text-left px-4 py-2 text-xs font-medium transition-colors cursor-pointer ${
-                    r === dateRange ? "text-white bg-[#2d2e44]" : "text-[#8b8c9e] hover:bg-[#222330] hover:text-white"
+                    r === dateRange
+                      ? "text-[#EEFABD] bg-[#263B6A]"
+                      : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
                   }`}
                 >
                   {r}
@@ -84,7 +86,7 @@ export default function InventoryTopBar() {
         </div>
 
         {/* Customize */}
-        <button className="flex items-center gap-2 px-3 py-1.5 text-[#8b8c9e] hover:text-white text-xs font-medium transition-colors cursor-pointer">
+        <button className="flex items-center gap-2 px-3 py-1.5 text-[#6984A9] hover:text-[#EEFABD] text-xs font-medium transition-colors cursor-pointer">
           <CustomizeIcon className="w-4 h-4" />
           Customize
         </button>

@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function InventoryPage() {
   return (
-    <div className="flex h-screen w-full bg-[#0e0f18] overflow-hidden text-white">
+    <div className="flex h-screen w-full bg-[#0b1324] overflow-hidden text-white">
       {/* Left: Fixed Sidebar */}
       <InventorySidebar />
 

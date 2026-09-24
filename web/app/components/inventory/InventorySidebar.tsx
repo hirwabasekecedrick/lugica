@@ -44,7 +44,7 @@ export default function InventorySidebar() {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <aside className="w-[190px] min-w-[190px] h-screen bg-[#111218] border-r border-[#222330] flex flex-col overflow-hidden select-none">
+    <aside className="w-[190px] min-w-[190px] h-screen bg-[#0d1525] border-r border-[#263B6A] flex flex-col overflow-hidden select-none">
       {/* Logo + User header */}
       <div className="px-4 pt-4 pb-2">
         {/* Logo */}
@@ -53,16 +53,16 @@ export default function InventorySidebar() {
         </div>
 
         {/* User selector */}
-        <button className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[#1c1d2b] transition-colors text-left group">
+        <button className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[#263B6A]/40 transition-colors text-left group">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-[#3a3b50] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+            <div className="w-5 h-5 rounded bg-[#263B6A] flex items-center justify-center text-[10px] font-bold text-[#A0D585] flex-shrink-0">
               M
             </div>
-            <span className="text-[#c0c1d4] text-xs font-medium truncate max-w-[100px]">
+            <span className="text-[#6984A9] text-xs font-medium truncate max-w-[100px]">
               Maurice IRAGABA
             </span>
           </div>
-          <ChevronDownIcon className="w-3 h-3 text-[#6b6c80] flex-shrink-0" />
+          <ChevronDownIcon className="w-3 h-3 text-[#6984A9] flex-shrink-0" />
         </button>
       </div>
 
@@ -70,7 +70,7 @@ export default function InventorySidebar() {
       <div className="px-4 py-3">
         <button
           onClick={() => setCreateOpen(!createOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 bg-[#b5f03a] hover:bg-[#c8ff4d] text-[#111218] font-semibold text-sm rounded-lg transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between px-3 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-semibold text-sm rounded-lg transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2">
             <CreateIcon className="w-4 h-4" />
@@ -81,11 +81,11 @@ export default function InventorySidebar() {
       </div>
 
       {/* Scrollable nav */}
-      <nav className="flex-1 overflow-y-auto px-3 space-y-4 pb-4">
+      <nav className="flex-1 overflow-y-auto px-3 space-y-4 pb-4 inventory-scroll">
         {navItems.map((group, gi) => (
           <div key={gi}>
             {group.section && (
-              <p className="text-[#4a4b60] text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
+              <p className="text-[#6984A9]/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
                 {group.section}
               </p>
             )}
@@ -96,14 +96,14 @@ export default function InventorySidebar() {
                     href={item.href}
                     className={`flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm font-medium transition-colors ${
                       item.active
-                        ? "bg-[#1e1f30] text-white"
-                        : "text-[#8b8c9e] hover:bg-[#1a1b28] hover:text-white"
+                        ? "bg-[#263B6A] text-[#EEFABD]"
+                        : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
                     }`}
                   >
                     <item.icon className="w-4 h-4 flex-shrink-0" />
                     <span>{item.label}</span>
                     {item.badge && (
-                      <span className="ml-auto text-[9px] font-bold bg-[#6c4dd6] text-white px-1.5 py-0.5 rounded">
+                      <span className="ml-auto text-[9px] font-bold bg-[#A0D585]/20 text-[#A0D585] border border-[#A0D585]/30 px-1.5 py-0.5 rounded">
                         {item.badge}
                       </span>
                     )}
@@ -117,20 +117,20 @@ export default function InventorySidebar() {
 
       {/* Credits */}
       <div className="px-5 py-2">
-        <p className="text-[#4a4b60] text-[11px]">5,000 credits</p>
+        <p className="text-[#6984A9]/50 text-[11px]">5,000 credits</p>
       </div>
 
       {/* Bottom user row */}
-      <div className="border-t border-[#222330] px-4 py-3 flex items-center justify-between">
+      <div className="border-t border-[#263B6A] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6c4dd6] to-[#4a90d9] flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#263B6A] to-[#6984A9] flex items-center justify-center text-[11px] font-bold text-[#EEFABD] flex-shrink-0">
             MI
           </div>
-          <span className="text-[#c0c1d4] text-xs font-medium truncate max-w-[90px]">
+          <span className="text-[#6984A9] text-xs font-medium truncate max-w-[90px]">
             Maurice IRAGABA
           </span>
         </div>
-        <button className="text-[#6b6c80] hover:text-white transition-colors">
+        <button className="text-[#6984A9] hover:text-[#EEFABD] transition-colors cursor-pointer">
           <ChevronUpDownIcon className="w-4 h-4" />
         </button>
       </div>
