@@ -6,3 +6,10 @@ allowBuilds:
   msgpackr-extract: true
   prisma: true
   workerd: true
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@scarf/scarf'
+  - esbuild
+  - prisma
