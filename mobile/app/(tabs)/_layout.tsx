@@ -46,7 +46,6 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme].tint,
-          headerBackVisible: false,
           headerLeft: () => null,
           headerTitle: () => (
             <View style={styles.logoContainer}>
@@ -60,14 +59,14 @@ export default function TabLayout() {
                 <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={Colors[colorScheme].text} size={22} />
               </Pressable>
               <Pressable onPress={() => setActiveModal('account')} hitSlop={10}>
-                <SymbolView name={{ ios: 'person.circle', android: 'account-circle', web: 'account_circle' }} tintColor={Colors[colorScheme].text} size={24} />
+                <SymbolView name={{ ios: 'person.circle', android: 'account_circle', web: 'account_circle' }} tintColor={Colors[colorScheme].text} size={24} />
               </Pressable>
             </View>
           ),
         }}>
         <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={color} size={24} /> }} />
-        <Tabs.Screen name="cart" options={{ title: 'Cart', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'cart.fill', android: 'shopping-cart', web: 'shopping_cart' }} tintColor={color} size={24} /> }} />
-        <Tabs.Screen name="truck" options={{ title: 'Deliveries', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'truck.box.fill', android: 'local-shipping', web: 'local_shipping' }} tintColor={color} size={24} /> }} />
+        <Tabs.Screen name="cart" options={{ title: 'Cart', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'cart.fill', android: 'shopping_cart', web: 'shopping_cart' }} tintColor={color} size={24} /> }} />
+        <Tabs.Screen name="truck" options={{ title: 'Deliveries', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'truck.box.fill', android: 'local_shipping', web: 'local_shipping' }} tintColor={color} size={24} /> }} />
         <Tabs.Screen name="two" options={{ href: null }} />
       </Tabs>
 
