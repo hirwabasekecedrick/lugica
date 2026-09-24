@@ -3,48 +3,29 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import LugicaLogo from "../LugicaLogo";
+import { useStore } from "../../lib/store";
 
-type NavItem = {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  href: string;
-  active: boolean;
-  badge?: string;
-};
+interface InventorySidebarProps {
+  activeTab?: "overview" | "catalog" | "procurement";
+  onSelectTab?: (tab: "overview" | "catalog" | "procurement") => void;
+  onOpenAddProduct?: () => void;
+  onOpenProcure?: () => void;
+}
 
-type NavGroup = {
-  section: string | null;
-  items: NavItem[];
-};
+export default function InventorySidebar({
+  activeTab = "overview",
+  onSelectTab,
+  onOpenAddProduct,
+  onOpenProcure,
+}: InventorySidebarProps) {
+  const { currentRole, switchRole, procurementBatches, products } = useStore();
+  const [createDropdownOpen, setCreateDropdownOpen] = useState(false);
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
-const navItems: NavGroup[] = [
-  {
-    section: null,
-    items: [{ label: "Home", icon: HomeIcon, href: "/inventory", active: true }],
-  },
-  {
-    section: "CREATE",
-    items: [
-      { label: "Pages", icon: PagesIcon, href: "#", active: false },
-      { label: "Sites", icon: SitesIcon, href: "#", active: false },
-      { label: "Pop-ups", icon: PopupsIcon, href: "#", active: false },
-      { label: "Ads", icon: AdsIcon, href: "#", active: false, badge: "BETA" },
-    ],
-  },
-  {
-    section: "ANALYZE",
-    items: [
-      { label: "Analytics", icon: AnalyticsIcon, href: "#", active: false },
-      { label: "Leads", icon: LeadsIcon, href: "#", active: false },
-    ],
-  },
-];
-
-export default function InventorySidebar() {
-  const [createOpen, setCreateOpen] = useState(false);
+  const lowStockCount = products.filter((p) => p.status === "low-stock").length;
 
   return (
-    <aside className="w-[190px] min-w-[190px] h-screen bg-[#0d1525] border-r border-[#263B6A] flex flex-col overflow-hidden select-none">
+    <aside className="w-[200px] min-w-[200px] h-screen bg-[#0d1525] border-r border-[#263B6A] flex flex-col overflow-hidden select-none">
       {/* Logo + User header */}
       <div className="px-4 pt-4 pb-2">
         {/* Logo */}
@@ -52,72 +33,201 @@ export default function InventorySidebar() {
           <LugicaLogo />
         </div>
 
-        {/* User selector */}
-        <button className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[#263B6A]/40 transition-colors text-left group">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-[#263B6A] flex items-center justify-center text-[10px] font-bold text-[#A0D585] flex-shrink-0">
-              M
+        {/* User selector & Role indicator */}
+        <div className="relative">
+          <button
+            onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+            className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[#263B6A]/40 transition-colors text-left group"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded bg-[#263B6A] flex items-center justify-center text-[10px] font-bold text-[#A0D585] flex-shrink-0">
+                M
+              </div>
+              <div className="truncate">
+                <span className="text-[#EEFABD] text-xs font-semibold block leading-tight truncate">
+                  Maurice I.
+                </span>
+                <span className="text-[10px] text-[#A0D585] font-mono capitalize">
+                  {currentRole.replace("_", " ")}
+                </span>
+              </div>
             </div>
-            <span className="text-[#6984A9] text-xs font-medium truncate max-w-[100px]">
-              Maurice IRAGABA
-            </span>
-          </div>
-          <ChevronDownIcon className="w-3 h-3 text-[#6984A9] flex-shrink-0" />
-        </button>
+            <ChevronDownIcon className="w-3 h-3 text-[#6984A9] flex-shrink-0" />
+          </button>
+
+          {/* Role selector dropdown */}
+          {roleMenuOpen && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-[#131e36] border border-[#263B6A] rounded-xl p-1.5 shadow-2xl z-50 animate-fadeIn text-xs">
+              <p className="text-[10px] font-semibold text-[#6984A9] uppercase px-2 py-1">
+                Switch Active Role
+              </p>
+              {(["shop_manager", "admin", "client"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => {
+                    switchRole(r);
+                    setRoleMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-1.5 rounded-md font-medium capitalize flex items-center justify-between transition-colors cursor-pointer ${
+                    currentRole === r
+                      ? "bg-[#263B6A] text-[#EEFABD]"
+                      : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-white"
+                  }`}
+                >
+                  <span>{r.replace("_", " ")}</span>
+                  {currentRole === r && <span className="text-[#A0D585]">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Create button */}
-      <div className="px-4 py-3">
+      {/* Quick Action Button */}
+      <div className="px-4 py-3 relative">
         <button
-          onClick={() => setCreateOpen(!createOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-semibold text-sm rounded-lg transition-colors cursor-pointer"
+          onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-sm active:scale-[0.98]"
         >
           <div className="flex items-center gap-2">
             <CreateIcon className="w-4 h-4" />
-            <span>Create</span>
+            <span>New Action</span>
           </div>
           <ChevronDownIcon className="w-3 h-3" />
         </button>
+
+        {createDropdownOpen && (
+          <div className="absolute left-4 right-4 top-full mt-1 bg-[#131e36] border border-[#263B6A] rounded-xl p-1 shadow-2xl z-50 animate-fadeIn">
+            <button
+              onClick={() => {
+                setCreateDropdownOpen(false);
+                if (onSelectTab) onSelectTab("catalog");
+                if (onOpenAddProduct) onOpenAddProduct();
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-[#263B6A]/40 rounded-lg text-xs font-semibold text-white flex items-center gap-2 cursor-pointer"
+            >
+              <span>📦</span>
+              <span>Add New Product</span>
+            </button>
+            <button
+              onClick={() => {
+                setCreateDropdownOpen(false);
+                if (onSelectTab) onSelectTab("procurement");
+                if (onOpenProcure) onOpenProcure();
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-[#263B6A]/40 rounded-lg text-xs font-semibold text-[#A0D585] flex items-center gap-2 cursor-pointer"
+            >
+              <span>📥</span>
+              <span>Procure Stock Batch</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Scrollable nav */}
+      {/* Navigation links */}
       <nav className="flex-1 overflow-y-auto px-3 space-y-4 pb-4 inventory-scroll">
-        {navItems.map((group, gi) => (
-          <div key={gi}>
-            {group.section && (
-              <p className="text-[#6984A9]/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
-                {group.section}
-              </p>
-            )}
-            <ul className="space-y-0.5">
-              {group.items.map((item) => (
-                <li key={item.label}>
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      item.active
-                        ? "bg-[#263B6A] text-[#EEFABD]"
-                        : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
-                    }`}
-                  >
-                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                    <span>{item.label}</span>
-                    {item.badge && (
-                      <span className="ml-auto text-[9px] font-bold bg-[#A0D585]/20 text-[#A0D585] border border-[#A0D585]/30 px-1.5 py-0.5 rounded">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        {/* Core Management */}
+        <div>
+          <p className="text-[#6984A9]/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
+            MANAGEMENT
+          </p>
+          <ul className="space-y-0.5">
+            <li>
+              <button
+                onClick={() => onSelectTab && onSelectTab("overview")}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                  activeTab === "overview"
+                    ? "bg-[#263B6A] text-[#EEFABD]"
+                    : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
+                }`}
+              >
+                <DashboardIcon className="w-4 h-4 flex-shrink-0" />
+                <span>Dashboard</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onSelectTab && onSelectTab("catalog")}
+                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                  activeTab === "catalog"
+                    ? "bg-[#263B6A] text-[#EEFABD]"
+                    : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <CatalogIcon className="w-4 h-4 flex-shrink-0" />
+                  <span>Inventory Catalog</span>
+                </div>
+                {lowStockCount > 0 && (
+                  <span className="text-[10px] font-bold bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded-full">
+                    {lowStockCount}
+                  </span>
+                )}
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onSelectTab && onSelectTab("procurement")}
+                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+                  activeTab === "procurement"
+                    ? "bg-[#263B6A] text-[#EEFABD]"
+                    : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ProcurementIcon className="w-4 h-4 flex-shrink-0" />
+                  <span>Procurement</span>
+                </div>
+                <span className="text-[10px] font-bold bg-[#A0D585]/20 text-[#A0D585] px-1.5 py-0.2 rounded-full">
+                  {procurementBatches.length}
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        {/* Channels */}
+        <div>
+          <p className="text-[#6984A9]/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
+            SALES CHANNELS
+          </p>
+          <ul className="space-y-0.5">
+            <li>
+              <Link
+                href="/shop"
+                className="flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD] transition-colors group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <StorefrontIcon className="w-4 h-4 flex-shrink-0 group-hover:text-[#A0D585]" />
+                  <span>Client Store</span>
+                </div>
+                <span className="text-[9px] font-bold bg-[#A0D585]/20 text-[#A0D585] border border-[#A0D585]/30 px-1.5 py-0.5 rounded">
+                  VIEW
+                </span>
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/checkout"
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD] transition-colors"
+              >
+                <CheckoutIcon className="w-4 h-4 flex-shrink-0" />
+                <span>Checkout Flow</span>
+              </Link>
+            </li>
+          </ul>
+        </div>
       </nav>
 
-      {/* Credits */}
-      <div className="px-5 py-2">
-        <p className="text-[#6984A9]/50 text-[11px]">5,000 credits</p>
+      {/* Warehouse Status banner */}
+      <div className="px-4 py-2 bg-[#131e36]/60 border-t border-[#263B6A]/50">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-[#6984A9]">Hub Status:</span>
+          <span className="text-[#A0D585] font-semibold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#A0D585] animate-pulse" />
+            Operational
+          </span>
+        </div>
       </div>
 
       {/* Bottom user row */}
@@ -126,35 +236,37 @@ export default function InventorySidebar() {
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#263B6A] to-[#6984A9] flex items-center justify-center text-[11px] font-bold text-[#EEFABD] flex-shrink-0">
             MI
           </div>
-          <span className="text-[#6984A9] text-xs font-medium truncate max-w-[90px]">
-            Maurice IRAGABA
-          </span>
+          <div className="truncate">
+            <span className="text-[#c0c1d4] text-xs font-medium block truncate max-w-[90px]">
+              Maurice IRAGABA
+            </span>
+            <span className="text-[10px] text-[#6984A9] block">Manager ID #4092</span>
+          </div>
         </div>
-        <button className="text-[#6984A9] hover:text-[#EEFABD] transition-colors cursor-pointer">
-          <ChevronUpDownIcon className="w-4 h-4" />
-        </button>
+        <Link
+          href="/login"
+          title="Sign out / Switch user"
+          className="text-[#6984A9] hover:text-[#EEFABD] transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </Link>
       </div>
     </aside>
   );
 }
 
 /* ─── Inline SVG Icons ──────────────────────────────────────── */
-function HomeIcon({ className }: { className?: string }) {
+function DashboardIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="currentColor">
       <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h4a1 1 0 001-1v-3h2v3a1 1 0 001 1h4a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
     </svg>
   );
 }
-function PagesIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <rect x="3" y="2" width="14" height="16" rx="2" />
-      <path d="M6 6h8M6 10h8M6 14h4" strokeLinecap="round" />
-    </svg>
-  );
-}
-function SitesIcon({ className }: { className?: string }) {
+
+function CatalogIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
       <rect x="2" y="3" width="16" height="14" rx="2" />
@@ -163,38 +275,34 @@ function SitesIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-function PopupsIcon({ className }: { className?: string }) {
+
+function ProcurementIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <rect x="2" y="5" width="16" height="12" rx="2" />
-      <path d="M6 5V3.5A1.5 1.5 0 017.5 2h5A1.5 1.5 0 0114 3.5V5" strokeLinecap="round" />
-      <path d="M7 10h6M7 13h4" strokeLinecap="round" />
+      <path d="M4 4h12v12H4z" strokeLinecap="round" />
+      <path d="M10 2v6m0 0l-2-2m2 2l2-2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 13h6" strokeLinecap="round" />
     </svg>
   );
 }
-function AdsIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <path d="M3 10h4M13 10h4M10 3v4M10 13v4" strokeLinecap="round" />
-      <circle cx="10" cy="10" r="3" />
-    </svg>
-  );
-}
-function AnalyticsIcon({ className }: { className?: string }) {
+
+function StorefrontIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+      <path fillRule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
     </svg>
   );
 }
-function LeadsIcon({ className }: { className?: string }) {
+
+function CheckoutIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-      <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+      <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h3a1 1 0 100-2H9z" clipRule="evenodd" />
     </svg>
   );
 }
+
 function CreateIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -203,17 +311,11 @@ function CreateIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
 function ChevronDownIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="currentColor">
       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-    </svg>
-  );
-}
-function ChevronUpDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
     </svg>
   );
 }
