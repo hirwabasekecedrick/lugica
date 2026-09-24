@@ -1,6 +1,7 @@
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import Toast from 'react-native-toast-message';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
@@ -56,6 +57,7 @@ function RootLayoutNav() {
         <Stack.Screen name="register" options={{ title: 'Create account' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
+      <Toast />
     </ThemeProvider>
   );
 }

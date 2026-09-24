@@ -21,11 +21,11 @@ export default function LandingScreen() {
           </Pressable>
         </Link>
 
-        <View className="mt-4 flex-row justify-center space-x-6">
+        <View className="mt-4 flex-row justify-center gap-4 space-x-6">
           <Link href="/login" asChild>
             <Pressable className="py-2 active:opacity-60">
               <Text className="text-base font-medium text-slate-900">
-                Sign in
+                Dont have an account?
               </Text>
             </Pressable>
           </Link>
