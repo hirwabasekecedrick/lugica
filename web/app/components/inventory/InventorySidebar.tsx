@@ -10,6 +10,8 @@ interface InventorySidebarProps {
   onSelectTab?: (tab: "overview" | "catalog" | "procurement") => void;
   onOpenAddProduct?: () => void;
   onOpenProcure?: () => void;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export default function InventorySidebar({
@@ -17,6 +19,8 @@ export default function InventorySidebar({
   onSelectTab,
   onOpenAddProduct,
   onOpenProcure,
+  mobileOpen = false,
+  onCloseMobile,
 }: InventorySidebarProps) {
   const { currentRole, switchRole, procurementBatches, products } = useStore();
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false);
@@ -24,13 +28,29 @@ export default function InventorySidebar({
 
   const lowStockCount = products.filter((p) => p.status === "low-stock").length;
 
-  return (
-    <aside className="w-[200px] min-w-[200px] h-screen bg-[#0d1525] border-r border-[#263B6A] flex flex-col overflow-hidden select-none">
+  const handleTabClick = (tab: "overview" | "catalog" | "procurement") => {
+    if (onSelectTab) onSelectTab(tab);
+    if (onCloseMobile) onCloseMobile();
+  };
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full overflow-hidden select-none">
       {/* Logo + User header */}
       <div className="px-4 pt-4 pb-2">
-        {/* Logo */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center justify-between gap-2 mb-3">
           <LugicaLogo />
+          {/* Mobile close button */}
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="lg:hidden p-1.5 rounded-lg text-[#6984A9] hover:text-white hover:bg-[#131e36] transition-colors"
+              title="Close menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* User selector & Role indicator */}
@@ -40,7 +60,7 @@ export default function InventorySidebar({
             className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[#263B6A]/40 transition-colors text-left group"
           >
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded bg-[#263B6A] flex items-center justify-center text-[10px] font-bold text-[#A0D585] flex-shrink-0">
+              <div className="w-6 h-6 rounded bg-[#263B6A] flex items-center justify-center text-[11px] font-bold text-[#A0D585] flex-shrink-0">
                 M
               </div>
               <div className="truncate">
@@ -75,7 +95,11 @@ export default function InventorySidebar({
                   }`}
                 >
                   <span>{r.replace("_", " ")}</span>
-                  {currentRole === r && <span className="text-[#A0D585]">✓</span>}
+                  {currentRole === r && (
+                    <svg className="w-3.5 h-3.5 text-[#A0D585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
                 </button>
               ))}
             </div>
@@ -101,23 +125,27 @@ export default function InventorySidebar({
             <button
               onClick={() => {
                 setCreateDropdownOpen(false);
-                if (onSelectTab) onSelectTab("catalog");
+                handleTabClick("catalog");
                 if (onOpenAddProduct) onOpenAddProduct();
               }}
               className="w-full text-left px-3 py-2 hover:bg-[#263B6A]/40 rounded-lg text-xs font-semibold text-white flex items-center gap-2 cursor-pointer"
             >
-              <span>📦</span>
+              <svg className="w-4 h-4 text-[#A0D585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
               <span>Add New Product</span>
             </button>
             <button
               onClick={() => {
                 setCreateDropdownOpen(false);
-                if (onSelectTab) onSelectTab("procurement");
+                handleTabClick("procurement");
                 if (onOpenProcure) onOpenProcure();
               }}
               className="w-full text-left px-3 py-2 hover:bg-[#263B6A]/40 rounded-lg text-xs font-semibold text-[#A0D585] flex items-center gap-2 cursor-pointer"
             >
-              <span>📥</span>
+              <svg className="w-4 h-4 text-[#A0D585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
               <span>Procure Stock Batch</span>
             </button>
           </div>
@@ -134,7 +162,7 @@ export default function InventorySidebar({
           <ul className="space-y-0.5">
             <li>
               <button
-                onClick={() => onSelectTab && onSelectTab("overview")}
+                onClick={() => handleTabClick("overview")}
                 className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
                   activeTab === "overview"
                     ? "bg-[#263B6A] text-[#EEFABD]"
@@ -147,7 +175,7 @@ export default function InventorySidebar({
             </li>
             <li>
               <button
-                onClick={() => onSelectTab && onSelectTab("catalog")}
+                onClick={() => handleTabClick("catalog")}
                 className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
                   activeTab === "catalog"
                     ? "bg-[#263B6A] text-[#EEFABD]"
@@ -167,7 +195,7 @@ export default function InventorySidebar({
             </li>
             <li>
               <button
-                onClick={() => onSelectTab && onSelectTab("procurement")}
+                onClick={() => handleTabClick("procurement")}
                 className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
                   activeTab === "procurement"
                     ? "bg-[#263B6A] text-[#EEFABD]"
@@ -195,6 +223,7 @@ export default function InventorySidebar({
             <li>
               <Link
                 href="/shop"
+                onClick={onCloseMobile}
                 className="flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD] transition-colors group"
               >
                 <div className="flex items-center gap-2.5">
@@ -209,6 +238,7 @@ export default function InventorySidebar({
             <li>
               <Link
                 href="/checkout"
+                onClick={onCloseMobile}
                 className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD] transition-colors"
               >
                 <CheckoutIcon className="w-4 h-4 flex-shrink-0" />
@@ -232,7 +262,7 @@ export default function InventorySidebar({
 
       {/* Bottom user row */}
       <div className="border-t border-[#263B6A] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#263B6A] to-[#6984A9] flex items-center justify-center text-[11px] font-bold text-[#EEFABD] flex-shrink-0">
             MI
           </div>
@@ -246,14 +276,39 @@ export default function InventorySidebar({
         <Link
           href="/login"
           title="Sign out / Switch user"
-          className="text-[#6984A9] hover:text-[#EEFABD] transition-colors"
+          className="text-[#6984A9] hover:text-[#EEFABD] transition-colors p-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
         </Link>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Fixed Sidebar */}
+      <aside className="hidden lg:flex w-[210px] min-w-[210px] h-screen bg-[#0d1525] border-r border-[#263B6A] flex-col overflow-hidden select-none flex-shrink-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Slide-out Drawer */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop */}
+          <div
+            onClick={onCloseMobile}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity animate-fadeIn"
+          />
+
+          {/* Drawer Panel */}
+          <div className="fixed inset-y-0 left-0 w-[260px] max-w-[85vw] bg-[#0d1525] border-r border-[#263B6A] shadow-2xl flex flex-col z-10 animate-slideRight">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

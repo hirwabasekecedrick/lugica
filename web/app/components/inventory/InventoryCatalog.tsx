@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useStore } from "../../lib/store";
 import { Product, StockStatus } from "../../lib/types";
+import ProductIcon from "./ProductIcon";
 
 interface InventoryCatalogProps {
   onOpenProcurementForProduct?: (productId: string) => void;
@@ -29,7 +30,7 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
     costPrice: "",
     stock: "",
     minStockThreshold: "10",
-    image: "📦",
+    image: "package",
     description: "",
   });
 
@@ -63,7 +64,7 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
       costPrice: "",
       stock: "",
       minStockThreshold: "10",
-      image: "📦",
+      image: "package",
       description: "",
     });
     setIsAddModalOpen(true);
@@ -97,7 +98,7 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
         costPrice: parseFloat(formData.costPrice) || 0,
         stock: parseInt(formData.stock, 10) || 0,
         minStockThreshold: parseInt(formData.minStockThreshold, 10) || 10,
-        image: formData.image || "📦",
+        image: formData.image || "package",
         description: formData.description,
       });
       setEditingProduct(null);
@@ -110,7 +111,7 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
         costPrice: parseFloat(formData.costPrice) || 0,
         stock: parseInt(formData.stock, 10) || 0,
         minStockThreshold: parseInt(formData.minStockThreshold, 10) || 10,
-        image: formData.image || "📦",
+        image: formData.image || "package",
         description: formData.description,
       });
       setIsAddModalOpen(false);
@@ -173,36 +174,37 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
         </div>
 
         {/* Filters and Add button */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Category Dropdown */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-[#131e36] border border-[#263B6A] text-[#6984A9] text-xs rounded-lg px-3 py-2 outline-none focus:border-[#A0D585] cursor-pointer"
-          >
-            {categories.map((c) => (
-              <option key={c} value={c} className="bg-[#131e36] text-white">
-                {c === "all" ? "All Categories" : c}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {/* Category & Status Dropdowns */}
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-[#131e36] border border-[#263B6A] text-[#6984A9] text-xs rounded-lg px-2.5 py-2 outline-none focus:border-[#A0D585] cursor-pointer"
+            >
+              {categories.map((c) => (
+                <option key={c} value={c} className="bg-[#131e36] text-white">
+                  {c === "all" ? "All Categories" : c}
+                </option>
+              ))}
+            </select>
 
-          {/* Status Dropdown */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value as "all" | StockStatus)}
-            className="bg-[#131e36] border border-[#263B6A] text-[#6984A9] text-xs rounded-lg px-3 py-2 outline-none focus:border-[#A0D585] cursor-pointer"
-          >
-            <option value="all" className="bg-[#131e36] text-white">All Stock Statuses</option>
-            <option value="in-stock" className="bg-[#131e36] text-white">In Stock</option>
-            <option value="low-stock" className="bg-[#131e36] text-white">Low Stock</option>
-            <option value="out-of-stock" className="bg-[#131e36] text-white">Out of Stock</option>
-          </select>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value as "all" | StockStatus)}
+              className="bg-[#131e36] border border-[#263B6A] text-[#6984A9] text-xs rounded-lg px-2.5 py-2 outline-none focus:border-[#A0D585] cursor-pointer"
+            >
+              <option value="all" className="bg-[#131e36] text-white">All Statuses</option>
+              <option value="in-stock" className="bg-[#131e36] text-white">In Stock</option>
+              <option value="low-stock" className="bg-[#131e36] text-white">Low Stock</option>
+              <option value="out-of-stock" className="bg-[#131e36] text-white">Out of Stock</option>
+            </select>
+          </div>
 
           {/* Add Product Button */}
           <button
             onClick={openAddModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-lg transition-colors cursor-pointer ml-auto shadow-sm active:scale-[0.98]"
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-sm active:scale-[0.98] whitespace-nowrap"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -231,7 +233,11 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-[#6984A9]">
                     <div className="max-w-xs mx-auto flex flex-col items-center">
-                      <span className="text-3xl mb-2">🔍</span>
+                      <div className="w-10 h-10 rounded-xl bg-[#131e36] border border-[#263B6A] flex items-center justify-center text-[#6984A9] mb-3">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
                       <p className="font-semibold text-white mb-1">No products found</p>
                       <p className="text-xs">Try adjusting your search query or status filters.</p>
                     </div>
@@ -247,8 +253,8 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
                       {/* Name & SKU */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <span className="w-8 h-8 rounded-lg bg-[#182645] border border-[#263B6A] flex items-center justify-center text-base flex-shrink-0">
-                            {p.image}
+                          <span className="w-8 h-8 rounded-lg bg-[#182645] border border-[#263B6A] flex items-center justify-center text-[#A0D585] flex-shrink-0">
+                            <ProductIcon name={p.image || p.name} category={p.category} className="w-4 h-4 text-[#A0D585]" />
                           </span>
                           <div>
                             <p className="font-semibold text-white group-hover:text-[#EEFABD] transition-colors">
@@ -368,10 +374,10 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
 
       {/* ── ADD / EDIT PRODUCT MODAL ─────────────────────────── */}
       {(isAddModalOpen || editingProduct) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#0d1525] border border-[#263B6A] rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-4 border-b border-[#263B6A] mb-4">
-              <h3 className="text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#0d1525] border border-[#263B6A] rounded-2xl w-full max-w-lg p-4 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto inventory-scroll">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-[#263B6A] mb-4">
+              <h3 className="text-base sm:text-lg font-bold text-white">
                 {editingProduct ? "Edit Inventory Product" : "Add New Inventory Product"}
               </h3>
               <button
@@ -379,15 +385,18 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
                   setIsAddModalOpen(false);
                   setEditingProduct(null);
                 }}
-                className="text-[#6984A9] hover:text-white p-1"
+                className="text-[#6984A9] hover:text-white p-1 rounded-lg hover:bg-[#131e36] transition-colors"
+                title="Close dialog"
               >
-                ✕
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-medium text-[#6984A9] mb-1">Product Name *</label>
                   <input
                     type="text"
@@ -399,18 +408,24 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#6984A9] mb-1">Icon/Emoji</label>
-                  <input
-                    type="text"
-                    maxLength={3}
+                  <label className="block text-xs font-medium text-[#6984A9] mb-1">Item Icon</label>
+                  <select
                     value={formData.image}
                     onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    className="w-full bg-[#131e36] border border-[#263B6A] rounded-lg px-3 py-2 text-center text-sm text-white outline-none focus:border-[#A0D585]"
-                  />
+                    className="w-full bg-[#131e36] border border-[#263B6A] rounded-lg px-2 py-2 text-xs text-white outline-none focus:border-[#A0D585]"
+                  >
+                    <option value="package">Package Box</option>
+                    <option value="tracker">GPS Tracker</option>
+                    <option value="scanner">Barcode Scanner</option>
+                    <option value="label">Shipping Labels</option>
+                    <option value="bag">Delivery Gear</option>
+                    <option value="printer">Receipt Printer</option>
+                    <option value="tape">Security Tape</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#6984A9] mb-1">SKU Code *</label>
                   <input
@@ -438,7 +453,7 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#6984A9] mb-1">Retail Price ($) *</label>
                   <input
@@ -464,7 +479,7 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#6984A9] mb-1">Initial Stock Units</label>
                   <input
@@ -527,9 +542,11 @@ export default function InventoryCatalog({ onOpenProcurementForProduct }: Invent
       {deletingProductId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
           <div className="bg-[#0d1525] border border-rose-900/50 rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center">
-            <span className="w-12 h-12 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center text-xl mx-auto mb-3">
-              ⚠️
-            </span>
+            <div className="w-12 h-12 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
             <h4 className="text-base font-bold text-white mb-1">Delete Product?</h4>
             <p className="text-xs text-[#6984A9] mb-5">
               Are you sure you want to remove this item from the inventory catalog? This action will remove it from the client shop as well.

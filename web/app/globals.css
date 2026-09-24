@@ -23,6 +23,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Custom scrollbars for inventory dashboard ─────────────── */
@@ -53,3 +54,36 @@ body {
   background: transparent;
 }
 
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideRight {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 180ms ease-out both;
+}
+
+.animate-slideRight {
+  animation: slideRight 220ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.animate-slideUp {
+  animation: slideUp 200ms ease-out both;
+}
+
+/* ── Prevent layout shift on mobile with horizontal scroll tables ── */
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+}

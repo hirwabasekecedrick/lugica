@@ -104,7 +104,7 @@ export default function ProcurementWorkflow({
       )}
 
       {/* ── PROCUREMENT METRICS ──────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-4">
           <p className="text-[#6984A9] text-xs font-semibold uppercase tracking-wider mb-1">
             Total Batches Received
@@ -224,8 +224,11 @@ export default function ProcurementWorkflow({
                         {dateStr}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#A0D585]/15 text-[#A0D585] border border-[#A0D585]/30">
-                          ✓ Restocked
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#A0D585]/15 text-[#A0D585] border border-[#A0D585]/30">
+                          <svg className="w-3 h-3 text-[#A0D585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Restocked
                         </span>
                       </td>
                     </tr>
@@ -239,15 +242,21 @@ export default function ProcurementWorkflow({
 
       {/* ── RECORD PROCUREMENT MODAL ─────────────────────────── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#0d1525] border border-[#263B6A] rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-4 border-b border-[#263B6A] mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#0d1525] border border-[#263B6A] rounded-2xl w-full max-w-lg p-4 sm:p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto inventory-scroll">
+            <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-[#263B6A] mb-4">
               <div>
-                <h3 className="text-lg font-bold text-white">Procure Stock to Inventory</h3>
+                <h3 className="text-base sm:text-lg font-bold text-white">Procure Stock to Inventory</h3>
                 <p className="text-xs text-[#6984A9]">Receive delivery shipment and update SKU stock</p>
               </div>
-              <button onClick={handleCloseModal} className="text-[#6984A9] hover:text-white p-1">
-                ✕
+              <button
+                onClick={handleCloseModal}
+                className="text-[#6984A9] hover:text-white p-1 rounded-lg hover:bg-[#131e36] transition-colors"
+                title="Close dialog"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
@@ -271,7 +280,7 @@ export default function ProcurementWorkflow({
               </div>
 
               {/* Batch number & Supplier */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#6984A9] mb-1">
                     Batch / Manifest Number *
@@ -300,7 +309,7 @@ export default function ProcurementWorkflow({
               </div>
 
               {/* Qty & Cost */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#6984A9] mb-1">
                     Quantity Received (units) *
@@ -337,7 +346,11 @@ export default function ProcurementWorkflow({
                     <span className="text-[#6984A9]">Current Stock: </span>
                     <span className="font-bold text-white">{selectedProduct.stock} units</span>
                   </div>
-                  <span className="text-[#6984A9]">➔</span>
+                  <span className="text-[#6984A9]">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </span>
                   <div>
                     <span className="text-[#6984A9]">After Receiving: </span>
                     <span className="font-bold text-[#A0D585]">
