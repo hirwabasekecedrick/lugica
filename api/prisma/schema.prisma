@@ -7,12 +7,412 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AccountStatus {
-  ACTIVE
-  INACTIVE
-  DELETED
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  DRIVER
+  CLIENT
+  SHOP_MANAGER
 }
 
-model Users {
-  
+enum VehicleOwnership {
+  COMPANY
+  INDIVIDUAL
+}
+
+enum VehicleStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+  FAILED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  phone         String?
+  name          String
+  role          Role     @default(CLIENT)
+  isActive      Boolean  @default(true)
+  /// Only relevant for drivers; nullable for other roles
+  licenseNumber String?
+  /// Only relevant for drivers; nullable for other roles
+  isAvailable   Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  deliveriesAsClient Delivery[]              @relation("ClientDeliveries")
+  deliveriesAsDriver Delivery[]              @relation("DriverDeliveries")
+  ownedVehicles      Vehicle[]               @relation("VehicleOwner")
+  assignedVehicles   Vehicle[]               @relation("VehicleAssignedDriver")
+  vehicleAssignments VehicleAssignment[]     @relation("DriverAssignments")
+  refreshTokens      RefreshToken[]
+  driverLocations    DriverLocation[]
+  statusChanges      DeliveryStatusHistory[] @relation("StatusChangedBy")
+
+  // E-commerce relations
+  stockMovementsPerformed StockMovement[]
+  goodsReceiptsReceived   GoodsReceipt[]
+  cart                    Cart?
+  wishlistItems           WishlistItem[]
+  orders                  Order[]
+
+  @@map("users")
+}
+
+model Vehicle {
+  id               String           @id @default(uuid())
+  plateNumber      String           @unique
+  type             String
+  capacity         Float
+  ownershipType    VehicleOwnership
+  /// Required when ownershipType = INDIVIDUAL, must be null when COMPANY
+  ownedByDriverId  String?
+  /// Currently operating driver
+  assignedDriverId String?
+  status           VehicleStatus    @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ownedByDriver  User?               @relation("VehicleOwner", fields: [ownedByDriverId], references: [id])
+  assignedDriver User?               @relation("VehicleAssignedDriver", fields: [assignedDriverId], references: [id])
+  assignments    VehicleAssignment[]
+  deliveries     Delivery[]
+
+  @@map("vehicles")
+}
+
+model VehicleAssignment {
+  id           String    @id @default(uuid())
+  vehicleId    String
+  driverId     String
+  assignedAt   DateTime  @default(now())
+  unassignedAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  driver  User    @relation("DriverAssignments", fields: [driverId], references: [id])
+
+  @@index([vehicleId, unassignedAt])
+  @@map("vehicle_assignments")
+}
+
+model Delivery {
+  id                  String         @id @default(uuid())
+  clientId            String
+  driverId            String?
+  vehicleId           String?
+  pickupAddress       String
+  // NOTE: Using Float for lat/lng for now. Future upgrade path: PostGIS geography
+  // columns if proximity queries (nearest driver, geofencing) become a requirement.
+  pickupLat           Float
+  pickupLng           Float
+  dropoffAddress      String
+  dropoffLat          Float
+  dropoffLng          Float
+  status              DeliveryStatus @default(PENDING)
+  estimatedDeliveryAt DateTime?
+  deliveredAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  client          User                    @relation("ClientDeliveries", fields: [clientId], references: [id])
+  driver          User?                   @relation("DriverDeliveries", fields: [driverId], references: [id])
+  vehicle         Vehicle?                @relation(fields: [vehicleId], references: [id])
+  statusHistory   DeliveryStatusHistory[]
+  driverLocations DriverLocation[]
+
+  @@index([status])
+  @@index([clientId])
+  @@index([driverId])
+  @@map("deliveries")
+}
+
+model DeliveryStatusHistory {
+  id              String          @id @default(uuid())
+  deliveryId      String
+  fromStatus      DeliveryStatus?
+  toStatus        DeliveryStatus
+  changedByUserId String
+  notes           String?
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  delivery  Delivery @relation(fields: [deliveryId], references: [id])
+  changedBy User     @relation("StatusChangedBy", fields: [changedByUserId], references: [id])
+
+  @@map("delivery_status_history")
+}
+
+model DriverLocation {
+  id         String   @id @default(uuid())
+  driverId   String
+  deliveryId String?
+  // NOTE: Using Float for lat/lng for now. Future upgrade path: PostGIS geography
+  // columns if proximity queries (nearest driver, geofencing) become a requirement.
+  latitude   Float
+  longitude  Float
+  accuracy   Float?
+  recordedAt DateTime @default(now())
+
+  // Relations
+  driver   User      @relation(fields: [driverId], references: [id])
+  delivery Delivery? @relation(fields: [deliveryId], references: [id])
+
+  @@index([driverId, recordedAt(sort: Desc)])
+  @@index([deliveryId, recordedAt(sort: Desc)])
+  @@map("driver_locations")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("refresh_tokens")
+}
+
+// ─── E-commerce Models ────────────────────────────────────────────────────────
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  parentId  String?
+  parent    Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryToCategory")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+enum ProductStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model Product {
+  id              String        @id @default(uuid())
+  sku             String        @unique
+  name            String
+  description     String
+  categoryId      String
+  category        Category      @relation(fields: [categoryId], references: [id])
+  priceMinorUnits Int
+  currency        String        @default("RWF")
+  stockQuantity   Int           @default(0)
+  searchText      String
+  status          ProductStatus
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  images         ProductImage[]
+  stockMovements StockMovement[]
+  receiptItems   GoodsReceiptItem[]
+  cartItems      CartItem[]
+  wishlistItems  WishlistItem[]
+  orderItems     OrderItem[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  url       String
+  altText   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("product_images")
+}
+
+enum StockMovementType {
+  RECEIPT
+  SALE
+  RELEASE
+  ADJUSTMENT
+  DAMAGED
+  WRITE_OFF
+}
+
+enum ReferenceType {
+  GOODS_RECEIPT_ITEM
+  ORDER
+  MANUAL
+}
+
+model StockMovement {
+  id                String            @id @default(uuid())
+  productId         String
+  product           Product           @relation(fields: [productId], references: [id])
+  type              StockMovementType
+  quantity          Int
+  referenceType     ReferenceType?
+  referenceId       String?
+  performedByUserId String
+  performedByUser   User              @relation(fields: [performedByUserId], references: [id])
+  notes             String?
+  createdAt         DateTime          @default(now())
+
+  @@index([productId, createdAt(sort: Desc)])
+  @@map("stock_movements")
+}
+
+model Supplier {
+  id          String   @id @default(uuid())
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  goodsReceipts GoodsReceipt[]
+
+  @@map("suppliers")
+}
+
+model GoodsReceipt {
+  id               String   @id @default(uuid())
+  supplierId       String
+  supplier         Supplier @relation(fields: [supplierId], references: [id])
+  deliveredByName  String
+  deliveredByPhone String?
+  invoiceNumber    String?
+  receivedByUserId String
+  receivedByUser   User     @relation(fields: [receivedByUserId], references: [id])
+  receivedAt       DateTime
+  notes            String?
+  createdAt        DateTime @default(now())
+
+  items GoodsReceiptItem[]
+
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptItem {
+  id                 String       @id @default(uuid())
+  goodsReceiptId     String
+  goodsReceipt       GoodsReceipt @relation(fields: [goodsReceiptId], references: [id])
+  productId          String
+  product            Product      @relation(fields: [productId], references: [id])
+  quantityDelivered  Int
+  quantityAccepted   Int
+  quantityRejected   Int
+  unitCostMinorUnits Int
+  batchNumber        String?
+  expiryDate         DateTime?
+  conditionNotes     String?
+
+  @@map("goods_receipt_items")
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@map("wishlist_items")
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  EXPIRED
+  CANCELLED
+  FULFILLED
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  clientId        String
+  client          User        @relation(fields: [clientId], references: [id])
+  status          OrderStatus
+  totalMinorUnits Int
+  currency        String
+  deliveryId      String?
+  expiresAt       DateTime
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  items OrderItem[]
+
+  @@index([clientId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                          String  @id @default(uuid())
+  orderId                     String
+  order                       Order   @relation(fields: [orderId], references: [id])
+  productId                   String
+  product                     Product @relation(fields: [productId], references: [id])
+  productNameSnapshot         String
+  unitPriceMinorUnitsSnapshot Int
+  quantity                    Int
+
+  @@map("order_items")
 }

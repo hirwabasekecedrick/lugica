@@ -1,0 +1,32 @@
+Delegation of the Inventory Task
+API: Joseph Inezayawe
+    Checkpoints 
+        - shop manager role
+        - Client Registration
+        - Inventory Management (CRUD)
+        - Role Based Access Control (RBAC) Backend Level Guards
+        - Listing of Products to the client 
+        - Indexing and search mechanism for products
+        - purchase workflow (add to cart, checkout, payment)
+        - Remembering user's last activity (last viewed products, last purchased products)
+        - Storing Cart and Wishlist for logged in users
+        - Schema for Inventory Management
+        - simple procurement workflow (for shop managers to add products to the inventory)
+        - Seeds
+        - POSTMAN API collection 
+
+Web: Maurice IRAGABA 
+    Checkpoints 
+        - Inventory pages 
+        - Integration with APIs
+
+Mobile: Cedrick HIRWA BASEKE 
+    Checkpoints 
+        - Inventory Screens
+        - Integration with APIs
+
+
+Submission time 12:00 AM "Merging"
+
+Note that the use of different braqnches is a MUST
+WE WILL USE "GIT WORKFLOW" as usual 

@@ -1,0 +1,28 @@
+Delegation
+API: Joseph Inezayawe
+    Checkpoints 
+        - Client Registration
+        - Client Login 
+        - RBAC Backend Level Guards
+        - Driver Registration by Admin
+        - Seeds
+        - Primary Database Schema
+        - Swagger Documentation Initialization
+        - Logouts
+        - POSTMAN API collection 
+
+Web: Maurice IRAGABA 
+    Checkpoints 
+        - IAM pages (logins, registration, RBAC relocations)
+        - Integration with APIs
+
+Mobile: Cedrick HIRWA BASEKE 
+    Checkpoints 
+        - IAM Screens (logins, registration, RBAC relocations)
+        - Integration with APIs
+
+
+Submission time 12:00 AM "Merging"
+
+Note that the use of different braqnches is a MUST
+WE WILL USE "GIT WORKFLOW" as usual 
