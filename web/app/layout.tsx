@@ -12,7 +12,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-import { StoreProvider } from "./lib/store";
+import { QueryProvider } from "./providers";
+import { ToastProvider } from "./components/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Lugica Delivery Express | Real-Time Logistics & Inventory",
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <StoreProvider>{children}</StoreProvider>
+        <ToastProvider>
+          <QueryProvider>{children}</QueryProvider>
+        </ToastProvider>
       </body>
     </html>
   );
