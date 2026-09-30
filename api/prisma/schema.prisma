@@ -128,6 +128,7 @@ model Delivery {
   dropoffAddress      String
   dropoffLat          Float
   dropoffLng          Float
+  packageDetails      String?
   status              DeliveryStatus @default(PENDING)
   estimatedDeliveryAt DateTime?
   deliveredAt         DateTime?
@@ -227,10 +228,12 @@ model Product {
   categoryId      String
   category        Category      @relation(fields: [categoryId], references: [id])
   priceMinorUnits Int
-  currency        String        @default("RWF")
-  stockQuantity   Int           @default(0)
-  searchText      String
-  status          ProductStatus
+  currency            String        @default("RWF")
+  stockQuantity       Int           @default(0)
+  minStockThreshold   Int           @default(10)
+  costPriceMinorUnits Int?
+  searchText          String
+  status              ProductStatus
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -393,6 +396,11 @@ model Order {
   totalMinorUnits Int
   currency        String
   deliveryId      String?
+  customerName    String      @default("")
+  customerEmail   String      @default("")
+  customerPhone   String      @default("")
+  shippingAddress String      @default("")
+  paymentMethod   String      @default("")
   expiresAt       DateTime
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

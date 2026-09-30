@@ -9,7 +9,7 @@ export class WishlistService {
   async getWishlist(userId: string) {
     return this.prisma.wishlistItem.findMany({
       where: { userId },
-      include: { product: true },
+      include: { product: { include: { images: true } } },
     });
   }
 

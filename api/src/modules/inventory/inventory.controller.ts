@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Param, Body, UseGuards, Get, Query } from '@nestjs/common';
+import { Controller, Post, Patch, Delete, Param, Body, UseGuards, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
 import { InventoryService } from './inventory.service.js';
 import { CreateProductDto } from '../catalog/dto/create-product.dto.js';
@@ -58,6 +58,12 @@ export class InventoryController {
     return this.inventoryService.archiveProduct(id);
   }
 
+  @Delete('products/:id')
+  @ApiOperation({ summary: 'Hard delete product (admin/manager)' })
+  async deleteProduct(@Param('id') id: string) {
+    return this.inventoryService.deleteProduct(id);
+  }
+
   @Get('products')
   @ApiOperation({ summary: 'List all products (admin/manager)' })
   @ApiOkResponse({ type: [ProductEntity] })
@@ -81,5 +87,23 @@ export class InventoryController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.inventoryService.manualStockAdjustment(id, dto, user.sub);
+  }
+
+  @Get('stock-movements')
+  @ApiOperation({ summary: 'Get stock movements (admin/manager)' })
+  async getStockMovements(
+    @Query('productId') productId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.inventoryService.getStockMovements(
+      productId,
+      startDate,
+      endDate,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 50
+    );
   }
 }

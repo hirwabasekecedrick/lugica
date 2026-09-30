@@ -25,6 +25,8 @@ import { WishlistModule } from './modules/wishlist/wishlist.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { ActivityModule } from './modules/activity/activity.module.js';
 
+import { MediaModule } from './modules/media/media.module.js';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -60,6 +62,7 @@ import { ActivityModule } from './modules/activity/activity.module.js';
     WishlistModule,
     OrdersModule,
     ActivityModule,
+    MediaModule,
   ],
   providers: [
     {

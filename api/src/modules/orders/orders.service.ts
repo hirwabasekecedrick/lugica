@@ -5,6 +5,8 @@ import { CartService } from '../cart/cart.service.js';
 import { OrderStatus, StockMovementType, ReferenceType } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 
+import { CheckoutDto } from './dto/checkout.dto.js';
+
 @Injectable()
 export class OrdersService implements OnModuleInit, OnModuleDestroy {
   private expiryInterval: NodeJS.Timeout;
@@ -25,7 +27,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     if (this.expiryInterval) clearInterval(this.expiryInterval);
   }
 
-  async checkout(clientId: string) {
+  async checkout(clientId: string, dto: CheckoutDto) {
     const cart = await this.cartService.getCart(clientId);
     if (!cart.items || cart.items.length === 0) {
       throw new BadRequestException('Cart is empty');
@@ -72,6 +74,11 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           status: OrderStatus.PENDING_PAYMENT,
           totalMinorUnits,
           currency: 'RWF', // Assuming RWF or fetching from first product
+          customerName: dto.customerName,
+          customerEmail: dto.customerEmail,
+          customerPhone: dto.customerPhone,
+          shippingAddress: dto.shippingAddress,
+          paymentMethod: dto.paymentMethod,
           expiresAt: new Date(Date.now() + expiryWindowMs),
           items: {
             create: orderItemsData,
@@ -119,6 +126,32 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  async cancelOrder(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status === OrderStatus.FULFILLED) {
+      throw new BadRequestException('Cannot cancel a fulfilled order');
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: OrderStatus.CANCELLED },
+    });
+  }
+
+  async fulfillOrder(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status !== OrderStatus.PAID) {
+      throw new BadRequestException('Order must be paid before fulfillment');
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: OrderStatus.FULFILLED },
+    });
+  }
+
   async getClientOrders(clientId: string, page = 1, limit = 20, status?: OrderStatus) {
     const where: any = { clientId };
     if (status) where.status = status;
@@ -134,7 +167,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       this.prisma.order.count({ where }),
     ]);
 
-    return { data, meta: { total, page, limit } };
+    const totalPages = Math.ceil(total / limit);
+    return { data, meta: { total, page, limit, totalPages } };
   }
 
   async getAllOrders(page = 1, limit = 20, status?: OrderStatus) {
@@ -152,7 +186,8 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
       this.prisma.order.count({ where }),
     ]);
 
-    return { data, meta: { total, page, limit } };
+    const totalPages = Math.ceil(total / limit);
+    return { data, meta: { total, page, limit, totalPages } };
   }
 
   async expireOrders() {

@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Query, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards, Param, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
 import { OrdersService } from './orders.service.js';
 import { QueryOrdersDto } from './dto/query-orders.dto.js';
+import { CheckoutDto } from './dto/checkout.dto.js';
 import { OrderEntity } from './entities/order.entity.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -21,8 +22,29 @@ export class OrdersController {
   @Roles(Role.CLIENT)
   @ApiOperation({ summary: 'Checkout cart (CLIENT only)' })
   @ApiOkResponse({ type: OrderEntity })
-  async checkout(@CurrentUser() user: JwtPayload) {
-    return this.ordersService.checkout(user.sub);
+  async checkout(@CurrentUser() user: JwtPayload, @Body() dto: CheckoutDto) {
+    return this.ordersService.checkout(user.sub, dto);
+  }
+
+  @Post('admin/orders/:id/pay')
+  @Roles(Role.ADMIN, Role.SHOP_MANAGER)
+  @ApiOperation({ summary: 'Mark order as paid (SHOP_MANAGER/ADMIN)' })
+  async markPaid(@Param('id') id: string) {
+    return this.ordersService.markOrderPaid(id);
+  }
+
+  @Post('admin/orders/:id/cancel')
+  @Roles(Role.ADMIN, Role.SHOP_MANAGER)
+  @ApiOperation({ summary: 'Cancel order (SHOP_MANAGER/ADMIN)' })
+  async cancelOrder(@Param('id') id: string) {
+    return this.ordersService.cancelOrder(id);
+  }
+
+  @Post('admin/orders/:id/fulfill')
+  @Roles(Role.ADMIN, Role.SHOP_MANAGER)
+  @ApiOperation({ summary: 'Mark order as fulfilled (SHOP_MANAGER/ADMIN)' })
+  async fulfillOrder(@Param('id') id: string) {
+    return this.ordersService.fulfillOrder(id);
   }
 
   @Get('orders')

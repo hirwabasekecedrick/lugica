@@ -64,6 +64,35 @@ async function main() {
     clients.push(client);
   }
 
+  // Driver
+  const driverEmail = process.env.DRIVER_EMAIL || 'driver@lugica.com';
+  const driver = await prisma.user.upsert({
+    where: { email: driverEmail },
+    update: { passwordHash },
+    create: {
+      email: driverEmail,
+      name: 'Test Driver',
+      phone: '+250780000099',
+      passwordHash,
+      role: Role.DRIVER,
+      isActive: true,
+      licenseNumber: 'DL-123456',
+      isAvailable: true,
+    },
+  });
+
+  // Vehicle
+  const vehicle = await prisma.vehicle.upsert({
+    where: { plateNumber: 'RAB123A' },
+    update: {},
+    create: {
+      plateNumber: 'RAB123A',
+      type: 'Truck',
+      capacity: 1000,
+      ownershipType: 'COMPANY',
+    },
+  });
+
   console.log('Seeding Categories...');
   const electronicsCat = await prisma.category.upsert({
     where: { name: 'Electronics' },
@@ -176,6 +205,11 @@ async function main() {
         status: OrderStatus.PAID,
         totalMinorUnits: products[0].priceMinorUnits,
         currency: 'RWF',
+        customerName: 'Test Client 1',
+        customerEmail: 'client1@lugica.com',
+        customerPhone: '+250780000011',
+        shippingAddress: 'Kigali, Rwanda',
+        paymentMethod: 'CASH',
         expiresAt: new Date(Date.now() + 3600000),
         items: {
           create: [{

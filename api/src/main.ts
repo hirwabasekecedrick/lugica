@@ -8,6 +8,12 @@ import { GlobalExceptionFilter } from './common/filters/http-exception.filter.js
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({
+    origin: '*', // For now allow all, or configure as needed
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+
   // Global Zod validation pipe
   app.useGlobalPipes(new ZodValidationPipe());
 

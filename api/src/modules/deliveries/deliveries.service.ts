@@ -24,6 +24,7 @@ export class DeliveriesService {
         dropoffAddress: dto.dropoffAddress,
         dropoffLat: dto.dropoffLat,
         dropoffLng: dto.dropoffLng,
+        packageDetails: dto.packageDetails,
         status: DeliveryStatus.PENDING,
       },
     });

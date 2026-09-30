@@ -11,10 +11,10 @@ import { ProductStatus, StockMovementType, ReferenceType } from '@prisma/client'
 export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async computeSearchText(name: string, sku: string, categoryId: string): Promise<string> {
+  private async computeSearchText(name: string, sku: string, description: string, categoryId: string): Promise<string> {
     const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
     const categoryName = category ? category.name : '';
-    return `${name} ${sku} ${categoryName}`.toLowerCase();
+    return `${name} ${sku} ${description} ${categoryName}`.toLowerCase();
   }
 
   // --- Category Management ---
@@ -31,15 +31,22 @@ export class InventoryService {
       data: dto,
     });
     
-    // In a real app, updating category name might require updating searchText for all its products
-    // For simplicity, we just update it here if needed, but the prompt says update on product create/update.
+    if (dto.name) {
+      // Recompute searchText for all products in this category
+      const products = await this.prisma.product.findMany({ where: { categoryId: id } });
+      for (const product of products) {
+        const searchText = await this.computeSearchText(product.name, product.sku, product.description, id);
+        await this.prisma.product.update({ where: { id: product.id }, data: { searchText } });
+      }
+    }
+
     return category;
   }
 
   // --- Product Management ---
 
   async createProduct(dto: CreateProductDto) {
-    const searchText = await this.computeSearchText(dto.name, dto.sku, dto.categoryId);
+    const searchText = await this.computeSearchText(dto.name, dto.sku, dto.description, dto.categoryId);
     const { images, ...productData } = dto;
 
     return this.prisma.product.create({
@@ -52,12 +59,21 @@ export class InventoryService {
   }
 
   async getProducts(skip: number = 0, take: number = 20) {
-    return this.prisma.product.findMany({
-      skip,
-      take,
-      orderBy: { createdAt: 'desc' },
-      include: { images: true, category: true },
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.product.findMany({
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { images: true, category: true },
+      }),
+      this.prisma.product.count(),
+    ]);
+    
+    const page = Math.floor(skip / take) + 1;
+    const limit = take;
+    const totalPages = Math.ceil(total / limit);
+
+    return { data, meta: { total, page, limit, totalPages } };
   }
 
   async getProductById(id: string) {
@@ -75,8 +91,9 @@ export class InventoryService {
 
     const name = dto.name ?? product.name;
     const sku = dto.sku ?? product.sku;
+    const description = dto.description ?? product.description;
     const categoryId = dto.categoryId ?? product.categoryId;
-    const searchText = await this.computeSearchText(name, sku, categoryId);
+    const searchText = await this.computeSearchText(name, sku, description, categoryId);
 
     const { images, ...productData } = dto;
 
@@ -100,6 +117,24 @@ export class InventoryService {
       where: { id },
       data: { status: ProductStatus.ARCHIVED },
     });
+  }
+
+  async deleteProduct(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: { orderItems: true },
+    });
+    
+    if (!product) throw new NotFoundException('Product not found');
+    if (product.orderItems.length > 0) {
+      throw new BadRequestException('Cannot delete product with order history. Archive it instead.');
+    }
+
+    // Delete associated images and stock movements first
+    await this.prisma.productImage.deleteMany({ where: { productId: id } });
+    await this.prisma.stockMovement.deleteMany({ where: { productId: id } });
+    
+    return this.prisma.product.delete({ where: { id } });
   }
 
   // --- Stock Management ---
@@ -176,5 +211,29 @@ export class InventoryService {
       dto.reason,
     );
     return { success: true };
+  }
+
+  async getStockMovements(productId?: string, startDate?: string, endDate?: string, page = 1, limit = 50) {
+    const where: any = {};
+    if (productId) where.productId = productId;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.stockMovement.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: { product: { select: { id: true, name: true, sku: true } }, performedByUser: { select: { id: true, name: true } } },
+      }),
+      this.prisma.stockMovement.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    return { data, meta: { total, page, limit, totalPages } };
   }
 }
