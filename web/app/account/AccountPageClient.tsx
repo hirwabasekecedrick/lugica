@@ -63,41 +63,41 @@ export default function AccountPageClient() {
   const canUseWarehouse = hasRole(session, WAREHOUSE_ROLES);
 
   return (
-    <div className="min-h-screen bg-[#0b1324] text-white flex flex-col font-sans selection:bg-[#A0D585] selection:text-[#0d1525]">
+    <div className="min-h-screen bg-page text-text flex flex-col font-sans selection:bg-accent selection:text-on-accent">
       <ShopNavbar onOpenCart={() => setCartOpen(true)} onOpenWishlist={() => setWishlistOpen(true)} />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
-        <section className="bg-gradient-to-r from-[#131e36] via-[#1a2b4c] to-[#0d1525] border border-[#263B6A] rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <section className="bg-gradient-to-r from-surface via-sunken to-page border border-border rounded-2xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#263B6A] to-[#6984A9] border border-[#A0D585]/40 flex items-center justify-center text-lg font-black text-[#EEFABD] shadow-lg flex-shrink-0">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-text to-text-muted border border-accent/40 flex items-center justify-center text-lg font-black text-on-status shadow-lg flex-shrink-0">
               {session?.initials ?? "—"}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-white truncate">
+                <h1 className="text-xl sm:text-2xl font-black text-text truncate">
                   {session?.displayName ?? "Signed in"}
                 </h1>
                 {session && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#A0D585]/15 text-[#A0D585] border border-[#A0D585]/30 uppercase">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-accent/15 text-text-accent border border-accent/30 uppercase">
                     {roleLabel(session.role)}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#6984A9]">{session?.email}</p>
+              <p className="text-xs text-text-muted">{session?.email}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
               href="/shop"
-              className="px-4 py-2 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-white rounded-xl text-xs font-semibold transition-colors"
+              className="px-4 py-2 bg-surface hover:bg-sunken border border-border text-text rounded-xl text-xs font-semibold transition-colors"
             >
               Browse Shop
             </Link>
             {canUseWarehouse && (
               <Link
                 href="/inventory"
-                className="px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] rounded-xl text-xs font-bold transition-colors"
+                className="px-4 py-2 bg-accent hover:bg-border text-on-accent rounded-xl text-xs font-bold transition-colors"
               >
                 Warehouse Admin &rarr;
               </Link>
@@ -106,39 +106,39 @@ export default function AccountPageClient() {
         </section>
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-4">
-            <span className="text-[#6984A9] text-xs font-semibold uppercase tracking-wider block mb-1">
+          <div className="bg-page border border-border rounded-xl p-4">
+            <span className="text-text-muted text-xs font-semibold uppercase tracking-wider block mb-1">
               Total Orders
             </span>
-            <p className="text-2xl font-black text-white">{totalOrders}</p>
+            <p className="text-2xl font-black text-text">{totalOrders}</p>
           </div>
-          <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-4">
-            <span className="text-[#6984A9] text-xs font-semibold uppercase tracking-wider block mb-1">
+          <div className="bg-page border border-border rounded-xl p-4">
+            <span className="text-text-muted text-xs font-semibold uppercase tracking-wider block mb-1">
               Saved Items
             </span>
-            <p className="text-2xl font-black text-[#A0D585]">{wishlistQuery.data?.length ?? 0}</p>
+            <p className="text-2xl font-black text-text-accent">{wishlistQuery.data?.length ?? 0}</p>
           </div>
-          <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-4">
-            <span className="text-[#6984A9] text-xs font-semibold uppercase tracking-wider block mb-1">
+          <div className="bg-page border border-border rounded-xl p-4">
+            <span className="text-text-muted text-xs font-semibold uppercase tracking-wider block mb-1">
               Recently Viewed
             </span>
-            <p className="text-2xl font-black text-[#EEFABD]">{viewed.length}</p>
-            <span className="text-xs text-[#6984A9]">Clears after 7 days</span>
+            <p className="text-2xl font-black text-text">{viewed.length}</p>
+            <span className="text-xs text-text-muted">Clears after 7 days</span>
           </div>
         </section>
 
-        <section className="bg-[#0d1525] border border-[#263B6A] rounded-2xl overflow-hidden shadow-xl">
-          <div className="p-5 border-b border-[#263B6A] flex flex-wrap items-center justify-between gap-3">
+        <section className="bg-page border border-border rounded-2xl overflow-hidden shadow-xl">
+          <div className="p-5 border-b border-border flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Order History</h3>
-              <p className="text-xs text-[#6984A9]">
+              <h3 className="text-sm font-bold text-text uppercase tracking-wider">Order History</h3>
+              <p className="text-xs text-text-muted">
                 Orders are held for payment and expire if not settled in time.
               </p>
             </div>
             <select
               value={statusFilter ?? ""}
               onChange={(e) => setStatusFilter((e.target.value || undefined) as OrderStatus | undefined)}
-              className="bg-[#131e36] border border-[#263B6A] text-[#EEFABD] text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:border-[#A0D585] cursor-pointer"
+              className="bg-surface border border-border text-text text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:border-text-accent cursor-pointer"
             >
               <option value="">All statuses</option>
               <option value="PENDING_PAYMENT">Pending Payment</option>
@@ -163,7 +163,7 @@ export default function AccountPageClient() {
                 action={
                   <Link
                     href="/shop"
-                    className="inline-block px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] text-xs font-bold rounded-lg transition-colors"
+                    className="inline-block px-4 py-2 bg-accent hover:bg-border text-on-accent text-xs font-bold rounded-lg transition-colors"
                   >
                     Shop now
                   </Link>
@@ -174,7 +174,7 @@ export default function AccountPageClient() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#131e36]/70 border-b border-[#263B6A] text-[#6984A9] text-[11px] font-semibold uppercase">
+                  <tr className="bg-surface/70 border-b border-border text-text-muted text-[11px] font-semibold uppercase">
                     <th className="py-3 px-4">Reference</th>
                     <th className="py-3 px-4">Placed</th>
                     <th className="py-3 px-4">Items</th>
@@ -182,37 +182,37 @@ export default function AccountPageClient() {
                     <th className="py-3 px-4">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#263B6A]/50">
+                <tbody className="divide-y divide-border/50">
                   {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-[#131e36]/40 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-[#EEFABD] break-all">
+                    <tr key={order.id} className="hover:bg-sunken transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-text break-all">
                         {order.id}
                       </td>
-                      <td className="py-3.5 px-4 text-[#6984A9] whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-text-muted whitespace-nowrap">
                         {formatDateTime(order.createdAt)}
                       </td>
-                      <td className="py-3.5 px-4 text-white">
+                      <td className="py-3.5 px-4 text-text">
                         {(order.items ?? [])
                           .map((i) => `${i.productNameSnapshot} (x${i.quantity})`)
                           .join(", ")}
                       </td>
-                      <td className="py-3.5 px-4 font-mono font-bold text-[#A0D585] whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono font-bold text-text-accent whitespace-nowrap">
                         {formatMoney(order.totalMinorUnits, order.currency)}
                       </td>
                       <td className="py-3.5 px-4">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
                             order.status === "EXPIRED" || order.status === "CANCELLED"
-                              ? "bg-rose-500/15 text-rose-300 border-rose-400/30"
+                              ? "bg-danger/15 text-danger border-danger/30"
                               : order.status === "PENDING_PAYMENT"
-                                ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
-                                : "bg-[#A0D585]/15 text-[#A0D585] border-[#A0D585]/30"
+                                ? "bg-warning/15 text-warning border-warning/30"
+                                : "bg-accent/15 text-text-accent border-accent/30"
                           }`}
                         >
                           {orderStatusLabel(order.status)}
                         </span>
                         {order.status === "PENDING_PAYMENT" && (
-                          <span className="block text-[10px] text-[#6984A9] mt-1">
+                          <span className="block text-[10px] text-text-muted mt-1">
                             {formatCountdown(order.expiresAt)}
                           </span>
                         )}
@@ -266,11 +266,11 @@ function ProductStrip({
   onAdd: (input: { productId: string; quantity?: number }, name: string) => void;
 }) {
   return (
-    <section className="bg-[#0d1525] border border-[#263B6A] rounded-2xl p-5 shadow-xl space-y-3">
-      <h3 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h3>
+    <section className="bg-page border border-border rounded-2xl p-5 shadow-xl space-y-3">
+      <h3 className="text-sm font-bold text-text uppercase tracking-wider">{title}</h3>
 
       {products.length === 0 ? (
-        <div className="py-8 text-center bg-[#131e36]/30 border border-[#263B6A]/50 rounded-xl text-xs text-[#6984A9]">
+        <div className="py-8 text-center bg-surface/30 border border-border/50 rounded-xl text-xs text-text-muted">
           {emptyText}
         </div>
       ) : (
@@ -278,25 +278,25 @@ function ProductStrip({
           {products.slice(0, 6).map((p) => (
             <div
               key={p.id}
-              className="p-3 bg-[#131e36]/60 border border-[#263B6A] rounded-xl flex items-center justify-between gap-3"
+              className="p-3 bg-surface/60 border border-border rounded-xl flex items-center justify-between gap-3"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-[#0d1525] flex items-center justify-center flex-shrink-0">
-                  <ProductIcon name={p.name} className="w-5 h-5 text-[#6984A9]" />
+                <div className="w-10 h-10 rounded-lg bg-page flex items-center justify-center flex-shrink-0">
+                  <ProductIcon name={p.name} className="w-5 h-5 text-text-muted" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white leading-tight truncate">{p.name}</p>
-                  <span className="text-[10px] text-[#6984A9] font-mono">{p.sku}</span>
+                  <p className="text-xs font-bold text-text leading-tight truncate">{p.name}</p>
+                  <span className="text-[10px] text-text-muted font-mono">{p.sku}</span>
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
-                <span className="text-xs font-bold text-[#A0D585] font-mono block">
+                <span className="text-xs font-bold text-text-accent font-mono block">
                   {formatMoney(p.priceMinorUnits, p.currency)}
                 </span>
                 {p.stockQuantity > 0 && (
                   <button
                     onClick={() => onAdd({ productId: p.id, quantity: 1 }, p.name)}
-                    className="text-[10px] text-[#EEFABD] hover:text-[#A0D585] font-semibold mt-0.5 cursor-pointer"
+                    className="text-[10px] text-text hover:text-text-accent font-semibold mt-0.5 cursor-pointer"
                   >
                     Add to cart
                   </button>

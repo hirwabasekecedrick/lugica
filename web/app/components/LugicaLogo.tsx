@@ -20,7 +20,7 @@ export default function LugicaLogo({ className = "" }: { className?: string }) {
             width="16"
             height="16"
             rx="4.5"
-            fill="#A0D585"
+            fill="var(--color-accent)"
           />
           <rect
             x="14"
@@ -28,24 +28,24 @@ export default function LugicaLogo({ className = "" }: { className?: string }) {
             width="16"
             height="16"
             rx="4.5"
-            fill="#6984A9"
+            fill="var(--color-text-muted)"
           />
           {/* Inner GPS marker point */}
           <circle
             cx="18"
             cy="18"
             r="4"
-            fill="#EEFABD"
+            fill="var(--color-page)"
           />
         </svg>
       </div>
 
       {/* Brand Name with Delivery Tag */}
       <div className="flex flex-col leading-none">
-        <span className="text-white font-bold text-xl tracking-tight font-sans flex items-center gap-1">
-          Lugica<span className="text-[10px] align-top text-[#A0D585] font-semibold">®</span>
+        <span className="text-text font-bold text-xl tracking-tight font-sans flex items-center gap-1">
+          Lugica<span className="text-[10px] align-top text-text-accent font-semibold">®</span>
         </span>
-        <span className="text-[9px] uppercase tracking-widest text-[#6984A9] font-bold mt-0.5">
+        <span className="text-[9px] uppercase tracking-widest text-text-muted font-bold mt-0.5">
           Delivery Express
         </span>
       </div>

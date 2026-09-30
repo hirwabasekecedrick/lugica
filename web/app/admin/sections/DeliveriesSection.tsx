@@ -37,7 +37,7 @@ export default function DeliveriesSection() {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-[#6984A9]">
+      <p className="text-xs text-text-muted">
         {deliveries.length} deliveries · {pending.length} awaiting assignment
       </p>
 
@@ -67,10 +67,10 @@ export default function DeliveriesSection() {
           description="Deliveries are created by clients through POST /deliveries; there is no web form for it yet."
         />
       ) : (
-        <div className="overflow-x-auto bg-[#0d1525] border border-[#263B6A] rounded-xl">
+        <div className="overflow-x-auto bg-page border border-border rounded-xl">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#131e36]/70 border-b border-[#263B6A] text-[#6984A9] text-[11px] font-semibold uppercase">
+              <tr className="bg-surface/70 border-b border-border text-text-muted text-[11px] font-semibold uppercase">
                 <th className="py-3 px-4">Reference</th>
                 <th className="py-3 px-4">Route</th>
                 <th className="py-3 px-4">Client</th>
@@ -79,23 +79,23 @@ export default function DeliveriesSection() {
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#263B6A]/50">
+            <tbody className="divide-y divide-border/50">
               {deliveries.map((d) => (
-                <tr key={d.id} className="hover:bg-[#131e36]/40 transition-colors">
-                  <td className="py-3 px-4 font-mono text-[10px] text-[#EEFABD] break-all max-w-[120px]">
+                <tr key={d.id} className="hover:bg-sunken transition-colors">
+                  <td className="py-3 px-4 font-mono text-[10px] text-text break-all max-w-[120px]">
                     {d.id}
                   </td>
-                  <td className="py-3 px-4 text-white">
+                  <td className="py-3 px-4 text-text">
                     <p className="truncate max-w-[200px]">{d.pickupAddress}</p>
-                    <p className="text-[10px] text-[#6984A9] truncate max-w-[200px]">
+                    <p className="text-[10px] text-text-muted truncate max-w-[200px]">
                       → {d.dropoffAddress}
                     </p>
                   </td>
-                  <td className="py-3 px-4 text-[#6984A9]">{d.client?.name ?? "—"}</td>
-                  <td className="py-3 px-4 text-white">
-                    {d.driver?.name ?? <span className="text-[#6984A9]">—</span>}
+                  <td className="py-3 px-4 text-text-muted">{d.client?.name ?? "—"}</td>
+                  <td className="py-3 px-4 text-text">
+                    {d.driver?.name ?? <span className="text-text-muted">—</span>}
                     {d.vehicle && (
-                      <span className="block text-[10px] text-[#6984A9] font-mono">
+                      <span className="block text-[10px] text-text-muted font-mono">
                         {d.vehicle.plateNumber}
                       </span>
                     )}
@@ -104,10 +104,10 @@ export default function DeliveriesSection() {
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                         d.status === "DELIVERED"
-                          ? "bg-[#A0D585]/15 text-[#A0D585] border-[#A0D585]/30"
+                          ? "bg-accent/15 text-text-accent border-accent/30"
                           : d.status === "FAILED" || d.status === "CANCELLED"
-                            ? "bg-rose-500/15 text-rose-300 border-rose-400/30"
-                            : "bg-amber-400/15 text-amber-300 border-amber-400/30"
+                            ? "bg-danger/15 text-danger border-danger/30"
+                            : "bg-warning/15 text-warning border-warning/30"
                       }`}
                     >
                       {deliveryStatusLabel(d.status)}
@@ -117,14 +117,14 @@ export default function DeliveriesSection() {
                     {d.status === "PENDING" && (
                       <button
                         onClick={() => setAssignFor(d.id)}
-                        className="px-2.5 py-1 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#EEFABD] text-[11px] font-semibold rounded cursor-pointer mr-1.5"
+                        className="px-2.5 py-1 bg-surface hover:bg-sunken border border-border text-text text-[11px] font-semibold rounded cursor-pointer mr-1.5"
                       >
                         Assign
                       </button>
                     )}
                     <button
                       onClick={() => setDetailFor(detailFor === d.id ? null : d.id)}
-                      className="px-2.5 py-1 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#6984A9] text-[11px] font-semibold rounded cursor-pointer"
+                      className="px-2.5 py-1 bg-surface hover:bg-sunken border border-border text-text-muted text-[11px] font-semibold rounded cursor-pointer"
                     >
                       History
                     </button>
@@ -145,8 +145,8 @@ function DeliveryHistory({ id }: { id: string }) {
   const detailQuery = useDelivery(id);
 
   return (
-    <section className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5">
-      <h3 className="text-sm font-bold text-white mb-3">Status history</h3>
+    <section className="bg-page border border-border rounded-xl p-5">
+      <h3 className="text-sm font-bold text-text mb-3">Status history</h3>
 
       {detailQuery.isLoading ? (
         <LoadingState label="Loading history…" />
@@ -157,18 +157,18 @@ function DeliveryHistory({ id }: { id: string }) {
           {(detailQuery.data?.statusHistory ?? []).map((h) => (
             <div
               key={h.id}
-              className="flex items-center justify-between gap-3 p-3 rounded-lg bg-[#131e36]/40 border border-[#263B6A]/40 text-xs"
+              className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface/40 border border-border/40 text-xs"
             >
               <div className="min-w-0">
-                <p className="text-white">
+                <p className="text-text">
                   {h.fromStatus ? `${h.fromStatus} → ` : ""}
-                  <span className="text-[#A0D585] font-semibold">{h.toStatus}</span>
+                  <span className="text-text-accent font-semibold">{h.toStatus}</span>
                 </p>
-                {h.notes && <p className="text-[10px] text-[#6984A9] truncate">{h.notes}</p>}
+                {h.notes && <p className="text-[10px] text-text-muted truncate">{h.notes}</p>}
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-[#6984A9]">{h.changedBy?.name ?? "—"}</p>
-                <p className="text-[10px] text-[#6984A9] font-mono">
+                <p className="text-text-muted">{h.changedBy?.name ?? "—"}</p>
+                <p className="text-[10px] text-text-muted font-mono">
                   {formatDateTime(h.createdAt)}
                 </p>
               </div>
@@ -227,22 +227,22 @@ function AssignDeliveryForm({
   return (
     <form
       onSubmit={submit}
-      className="bg-[#0d1525] border border-[#A0D585]/40 rounded-xl p-5 space-y-3"
+      className="bg-page border border-accent/40 rounded-xl p-5 space-y-3"
     >
-      <h3 className="text-sm font-bold text-white">Assign — {deliveryRef}</h3>
-      <p className="text-[11px] text-[#6984A9]">
+      <h3 className="text-sm font-bold text-text">Assign — {deliveryRef}</h3>
+      <p className="text-[11px] text-text-muted">
         Flips the delivery from PENDING to ASSIGNED and writes a status history entry, all in one
         transaction.
       </p>
 
       {error && (
-        <p className="text-[11px] text-rose-300 border border-rose-400/30 bg-rose-500/10 rounded-lg px-3 py-2">
+        <p className="text-[11px] text-danger border border-danger/30 bg-danger/10 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
 
       {blockedReason ? (
-        <p className="text-[11px] text-amber-300 border border-amber-400/30 bg-amber-400/10 rounded-lg px-3 py-2">
+        <p className="text-[11px] text-warning border border-warning/30 bg-warning/10 rounded-lg px-3 py-2">
           {blockedReason}
         </p>
       ) : (
@@ -250,7 +250,7 @@ function AssignDeliveryForm({
           <select
             value={driverId}
             onChange={(e) => setDriverId(e.target.value)}
-            className="flex-1 min-w-[160px] bg-[#131e36] border border-[#263B6A] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#A0D585]"
+            className="flex-1 min-w-[160px] bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-text-accent"
           >
             <option value="">Select driver…</option>
             {drivers.map((d) => (
@@ -261,7 +261,7 @@ function AssignDeliveryForm({
           <select
             value={vehicleId}
             onChange={(e) => setVehicleId(e.target.value)}
-            className="flex-1 min-w-[160px] bg-[#131e36] border border-[#263B6A] rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-[#A0D585]"
+            className="flex-1 min-w-[160px] bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-text-accent"
           >
             <option value="">Select vehicle…</option>
             {vehicles.map((v) => (
@@ -272,14 +272,14 @@ function AssignDeliveryForm({
           <button
             type="submit"
             disabled={pending}
-            className="px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] rounded-lg text-xs font-bold cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 bg-accent hover:bg-border text-on-accent rounded-lg text-xs font-bold cursor-pointer disabled:opacity-50"
           >
             {pending ? "Assigning…" : "Assign"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#6984A9] rounded-lg text-xs font-semibold cursor-pointer"
+            className="px-4 py-2 bg-surface hover:bg-sunken border border-border text-text-muted rounded-lg text-xs font-semibold cursor-pointer"
           >
             Cancel
           </button>

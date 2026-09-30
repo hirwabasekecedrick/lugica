@@ -59,7 +59,12 @@ export default function InventoryContent({
     return <ErrorState error={productsQuery.error} onRetry={() => productsQuery.refetch()} />;
   }
 
-  const colors = ["#A0D585", "#EEFABD", "#6984A9", "#3b5b99"];
+  const colors = [
+    "var(--color-chart-1)",
+    "var(--color-chart-2)",
+    "var(--color-chart-3)",
+    "var(--color-chart-4)",
+  ];
 
   return (
     <div className="space-y-6">
@@ -68,37 +73,37 @@ export default function InventoryContent({
           label="Retail Value"
           value={formatMoney(stats.retailMinorUnits)}
           hint={`${stats.active.length} active SKUs`}
-          accent="text-[#EEFABD]"
+          accent="text-text"
         />
         <KpiCard
           label="Units in Warehouse"
           value={stats.totalUnits.toLocaleString("en-US")}
           hint={`${stats.active.length} active SKUs`}
-          accent="text-white"
+          accent="text-text"
         />
         <KpiCard
           label="Needs Restock"
           value={String(stats.needsAttention.length)}
           hint={`Below ${LOW_STOCK_THRESHOLD} units or zero`}
-          accent={stats.needsAttention.length > 0 ? "text-amber-400" : "text-[#A0D585]"}
+          accent={stats.needsAttention.length > 0 ? "text-warning" : "text-text-accent"}
         />
         <KpiCard
           label="Goods Receipts"
           value={String(receiptsQuery.data?.length ?? 0)}
           hint="Recorded receipts"
-          accent="text-[#A0D585]"
+          accent="text-text-accent"
         />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 shadow-lg">
-          <h3 className="text-white text-sm font-bold tracking-tight">Stock by Category</h3>
-          <p className="text-xs text-[#6984A9] mt-1 mb-4">
+        <div className="lg:col-span-2 bg-page border border-border rounded-xl p-5 shadow-lg">
+          <h3 className="text-text text-sm font-bold tracking-tight">Stock by Category</h3>
+          <p className="text-xs text-text-muted mt-1 mb-4">
             Units and retail value per category, from live inventory.
           </p>
 
           {stats.byCategory.length === 0 ? (
-            <p className="text-xs text-[#6984A9] py-8 text-center">No active products yet.</p>
+            <p className="text-xs text-text-muted py-8 text-center">No active products yet.</p>
           ) : (
             <div className="space-y-4">
               {stats.byCategory.map(([name, data], idx) => {
@@ -111,20 +116,20 @@ export default function InventoryContent({
                           className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                           style={{ backgroundColor: colors[idx % colors.length] }}
                         />
-                        <span className="font-semibold text-white truncate">{name}</span>
+                        <span className="font-semibold text-text truncate">{name}</span>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <span className="font-bold text-[#EEFABD]">{data.units} units</span>
-                        <span className="text-[#6984A9] text-[10px] ml-1.5">({pct.toFixed(0)}%)</span>
+                        <span className="font-bold text-text">{data.units} units</span>
+                        <span className="text-text-muted text-[10px] ml-1.5">({pct.toFixed(0)}%)</span>
                       </div>
                     </div>
-                    <div className="w-full h-1.5 bg-[#131e36] rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-surface rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{ width: `${pct}%`, backgroundColor: colors[idx % colors.length] }}
                       />
                     </div>
-                    <p className="text-[10px] text-[#6984A9] font-mono">
+                    <p className="text-[10px] text-text-muted font-mono">
                       {formatMoney(data.valueMinor)} retail · {data.count} SKUs
                     </p>
                   </div>
@@ -134,14 +139,14 @@ export default function InventoryContent({
           )}
         </div>
 
-        <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 shadow-lg flex flex-col">
-          <h3 className="text-white text-sm font-bold tracking-tight">Restock Queue</h3>
-          <p className="text-xs text-[#6984A9] mt-1 mb-4">
+        <div className="bg-page border border-border rounded-xl p-5 shadow-lg flex flex-col">
+          <h3 className="text-text text-sm font-bold tracking-tight">Restock Queue</h3>
+          <p className="text-xs text-text-muted mt-1 mb-4">
             Active SKUs at or below the {LOW_STOCK_THRESHOLD}-unit threshold.
           </p>
 
           {stats.needsAttention.length === 0 ? (
-            <p className="text-xs text-[#A0D585] py-8 text-center">
+            <p className="text-xs text-text-accent py-8 text-center">
               All active items are above the threshold.
             </p>
           ) : (
@@ -149,21 +154,21 @@ export default function InventoryContent({
               {stats.needsAttention.map((p) => (
                 <div
                   key={p.id}
-                  className="p-3 bg-[#131e36] border border-[#263B6A] rounded-xl flex items-center justify-between gap-3"
+                  className="p-3 bg-surface border border-border rounded-xl flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-8 h-8 rounded-lg bg-[#0d1525] border border-[#263B6A] flex items-center justify-center flex-shrink-0">
-                      <ProductIcon name={p.name} className="w-4 h-4 text-[#A0D585]" />
+                    <span className="w-8 h-8 rounded-lg bg-page border border-border flex items-center justify-center flex-shrink-0">
+                      <ProductIcon name={p.name} className="w-4 h-4 text-text-accent" />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-white leading-tight truncate">{p.name}</p>
-                      <span className="text-[10px] text-[#6984A9] font-mono">{p.sku}</span>
+                      <p className="text-xs font-bold text-text leading-tight truncate">{p.name}</p>
+                      <span className="text-[10px] text-text-muted font-mono">{p.sku}</span>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div
                       className={`text-xs font-bold ${
-                        p.stockQuantity === 0 ? "text-rose-400" : "text-amber-300"
+                        p.stockQuantity === 0 ? "text-danger" : "text-warning"
                       }`}
                     >
                       {p.stockQuantity} units
@@ -171,7 +176,7 @@ export default function InventoryContent({
                     {onNavigateToProcurement && (
                       <button
                         onClick={() => onNavigateToProcurement(p.id)}
-                        className="px-2 py-1 mt-1 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                        className="px-2 py-1 mt-1 bg-accent hover:bg-border text-on-accent font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
                       >
                         Procure
                       </button>
@@ -184,9 +189,9 @@ export default function InventoryContent({
         </div>
       </section>
 
-      <section className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 shadow-lg">
-        <h3 className="text-white text-sm font-bold tracking-tight">Recent Goods Receipts</h3>
-        <p className="text-xs text-[#6984A9] mt-1 mb-4">
+      <section className="bg-page border border-border rounded-xl p-5 shadow-lg">
+        <h3 className="text-text text-sm font-bold tracking-tight">Recent Goods Receipts</h3>
+        <p className="text-xs text-text-muted mt-1 mb-4">
           Each receipt lists a supplier but not its line items; open a receipt to see them.
         </p>
 
@@ -202,18 +207,18 @@ export default function InventoryContent({
             {(receiptsQuery.data ?? []).slice(0, 8).map((r) => (
               <div
                 key={r.id}
-                className="flex items-start justify-between gap-3 p-3 rounded-lg bg-[#131e36]/40 border border-[#263B6A]/40"
+                className="flex items-start justify-between gap-3 p-3 rounded-lg bg-surface/40 border border-border/40"
               >
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">
+                  <p className="text-xs font-semibold text-text truncate">
                     {r.supplier?.name ?? "Supplier"}
                   </p>
-                  <p className="text-[10px] text-[#6984A9]">
+                  <p className="text-[10px] text-text-muted">
                     Delivered by {r.deliveredByName} · {formatDate(r.receivedAt)}
                     {r.invoiceNumber && ` · ${r.invoiceNumber}`}
                   </p>
                 </div>
-                <span className="text-[10px] text-[#6984A9] font-mono flex-shrink-0">
+                <span className="text-[10px] text-text-muted font-mono flex-shrink-0">
                   {r.items ? `${r.items.length} lines` : "items hidden"}
                 </span>
               </div>
@@ -237,10 +242,10 @@ function KpiCard({
   accent: string;
 }) {
   return (
-    <div className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-4 flex flex-col justify-between shadow-lg">
-      <span className="text-[#6984A9] text-xs font-semibold uppercase tracking-wider">{label}</span>
+    <div className="bg-page border border-border rounded-xl p-4 flex flex-col justify-between shadow-lg">
+      <span className="text-text-muted text-xs font-semibold uppercase tracking-wider">{label}</span>
       <p className={`text-2xl font-black ${accent}`}>{value}</p>
-      <span className="text-[11px] text-[#6984A9]">{hint}</span>
+      <span className="text-[11px] text-text-muted">{hint}</span>
     </div>
   );
 }
