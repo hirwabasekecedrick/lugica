@@ -40,9 +40,15 @@ export class ProcurementService {
         include: { items: true },
       });
 
-      // 2. Adjust stock for accepted items
+      // 2. Adjust stock and cost for accepted items
       for (const item of receipt.items) {
         if (item.quantityAccepted > 0) {
+          // Update cost price on product
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { costPriceMinorUnits: item.unitCostMinorUnits },
+          });
+
           await this.inventoryService.adjustStock(
             item.productId,
             item.quantityAccepted,
@@ -63,7 +69,7 @@ export class ProcurementService {
   async getGoodsReceipts() {
     return this.prisma.goodsReceipt.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { supplier: true },
+      include: { supplier: true, items: true },
     });
   }
 

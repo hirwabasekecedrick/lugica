@@ -32,10 +32,12 @@ export class CatalogService {
       orderBy,
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
+        category: { select: { id: true, name: true } },
       },
     });
 
-    return products;
+    const nextCursor = products.length === limit ? products[products.length - 1].id : null;
+    return { data: products, meta: { nextCursor } };
   }
 
   async getProductById(id: string, isStaff: boolean = false) {
@@ -54,24 +56,20 @@ export class CatalogService {
   }
 
   async getNewArrivals(cursor?: string, limit: number = 20) {
-    // New arrivals ordered by most recent RECEIPT stock movement, or fallback to createdAt
-    return this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       where: { status: ProductStatus.ACTIVE },
       take: limit,
       skip: cursor ? 1 : 0,
       cursor: cursor ? { id: cursor } : undefined,
-      orderBy: [
-        {
-          stockMovements: {
-            _count: 'desc' // Approximation: Prisma doesn't easily let us order by latest related record date in a simple query without complex relations or Raw SQL. Wait, let me fix this.
-          }
-        },
-        { createdAt: 'desc' }
-      ],
+      orderBy: { createdAt: 'desc' },
       include: {
-        images: true,
+        images: { orderBy: { sortOrder: 'asc' } },
+        category: { select: { id: true, name: true } },
       },
     });
+
+    const nextCursor = products.length === limit ? products[products.length - 1].id : null;
+    return { data: products, meta: { nextCursor } };
   }
 
   async getCategories() {

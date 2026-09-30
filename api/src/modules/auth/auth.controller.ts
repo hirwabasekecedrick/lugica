@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   UseGuards,
   HttpCode,
@@ -122,5 +123,18 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Invalid access token' })
   async logout(@Body() dto: RefreshTokenDto) {
     return this.authService.logout(dto.refreshToken);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Get current user',
+    description: 'Returns the profile of the currently authenticated user.',
+  })
+  @ApiOkResponse({ description: 'Current user profile' })
+  @ApiUnauthorizedResponse({ description: 'Invalid access token' })
+  async getMe(@CurrentUser() user: JwtPayload) {
+    return this.authService.getMe(user.sub);
   }
 }

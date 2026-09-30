@@ -9,6 +9,7 @@ export const createProductSchema = z.object({
   categoryId: z.string().uuid('Invalid category ID').describe('ID of the category'),
   priceMinorUnits: z.number().int().min(0, 'Price cannot be negative').describe('Price in minor units (e.g. cents)'),
   currency: z.string().default('RWF').describe('Currency code'),
+  minStockThreshold: z.number().int().min(0).default(10).describe('Minimum stock threshold'),
   status: z.nativeEnum(ProductStatus).default(ProductStatus.ACTIVE).describe('Product status'),
   images: z
     .array(
