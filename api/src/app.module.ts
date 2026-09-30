@@ -16,6 +16,7 @@ import { UsersModule } from './modules/users/users.module.js';
 import { VehiclesModule } from './modules/vehicles/vehicles.module.js';
 import { DeliveriesModule } from './modules/deliveries/deliveries.module.js';
 import { LocationsModule } from './modules/locations/locations.module.js';
+import { TrackingModule } from './modules/tracking/tracking.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { InventoryModule } from './modules/inventory/inventory.module.js';
 import { ProcurementModule } from './modules/procurement/procurement.module.js';
@@ -51,6 +52,7 @@ import { ActivityModule } from './modules/activity/activity.module.js';
     VehiclesModule,
     DeliveriesModule,
     LocationsModule,
+    TrackingModule,
     CatalogModule,
     InventoryModule,
     ProcurementModule,
