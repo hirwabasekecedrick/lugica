@@ -2,10 +2,11 @@ import { Injectable, BadRequestException, OnModuleInit, OnModuleDestroy, NotFoun
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { InventoryService } from '../inventory/inventory.service.js';
 import { CartService } from '../cart/cart.service.js';
-import { OrderStatus, StockMovementType, ReferenceType } from '@prisma/client';
+import { OrderStatus, StockMovementType, ReferenceType, DeliveryStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 
 import { CheckoutDto } from './dto/checkout.dto.js';
+import { CreateOrderDeliveryDto } from './dto/create-order-delivery.dto.js';
 
 @Injectable()
 export class OrdersService implements OnModuleInit, OnModuleDestroy {
@@ -67,6 +68,22 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         });
       }
 
+      let shippingAddress = dto.shippingAddress || '';
+      let shippingLat = dto.shippingLat;
+      let shippingLng = dto.shippingLng;
+
+      if (dto.savedLocationId) {
+        const savedLocation = await tx.savedLocation.findUnique({
+          where: { id: dto.savedLocationId },
+        });
+        if (!savedLocation || savedLocation.userId !== clientId) {
+          throw new BadRequestException('Saved location not found or invalid');
+        }
+        shippingAddress = savedLocation.address;
+        shippingLat = savedLocation.latitude;
+        shippingLng = savedLocation.longitude;
+      }
+
       // Create Order
       const order = await tx.order.create({
         data: {
@@ -77,7 +94,9 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
           customerName: dto.customerName,
           customerEmail: dto.customerEmail,
           customerPhone: dto.customerPhone,
-          shippingAddress: dto.shippingAddress,
+          shippingAddress,
+          shippingLat,
+          shippingLng,
           paymentMethod: dto.paymentMethod,
           expiresAt: new Date(Date.now() + expiryWindowMs),
           items: {
@@ -152,6 +171,38 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  async createDeliveryForOrder(orderId: string, dto: CreateOrderDeliveryDto) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.deliveryId) throw new BadRequestException('Order already has a delivery assigned');
+    if (!order.shippingLat || !order.shippingLng) {
+      throw new BadRequestException('Order is missing shipping coordinates');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const delivery = await tx.delivery.create({
+        data: {
+          clientId: order.clientId,
+          pickupAddress: dto.pickupAddress,
+          pickupLat: dto.pickupLat,
+          pickupLng: dto.pickupLng,
+          dropoffAddress: order.shippingAddress,
+          dropoffLat: order.shippingLat!,
+          dropoffLng: order.shippingLng!,
+          packageDetails: dto.packageDetails || `Order ${order.id}`,
+          status: DeliveryStatus.PENDING,
+        },
+      });
+
+      await tx.order.update({
+        where: { id: order.id },
+        data: { deliveryId: delivery.id },
+      });
+
+      return delivery;
+    });
+  }
+
   async getClientOrders(clientId: string, page = 1, limit = 20, status?: OrderStatus) {
     const where: any = { clientId };
     if (status) where.status = status;
@@ -171,6 +222,17 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     return { data, meta: { total, page, limit, totalPages } };
   }
 
+  async getClientOrderById(clientId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, clientId },
+      include: { items: true },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    return order;
+  }
+
   async getAllOrders(page = 1, limit = 20, status?: OrderStatus) {
     const where: any = {};
     if (status) where.status = status;
@@ -188,6 +250,17 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
 
     const totalPages = Math.ceil(total / limit);
     return { data, meta: { total, page, limit, totalPages } };
+  }
+
+  async getAdminOrderById(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, client: { select: { id: true, name: true, email: true, phone: true } } },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    return order;
   }
 
   async expireOrders() {

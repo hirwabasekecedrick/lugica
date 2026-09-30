@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse } from '@nestjs/swa
 import { OrdersService } from './orders.service.js';
 import { QueryOrdersDto } from './dto/query-orders.dto.js';
 import { CheckoutDto } from './dto/checkout.dto.js';
+import { CreateOrderDeliveryDto } from './dto/create-order-delivery.dto.js';
 import { OrderEntity } from './entities/order.entity.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -47,6 +48,16 @@ export class OrdersController {
     return this.ordersService.fulfillOrder(id);
   }
 
+  @Post('admin/orders/:id/create-delivery')
+  @Roles(Role.ADMIN, Role.SHOP_MANAGER)
+  @ApiOperation({ summary: 'Create a delivery for an order (SHOP_MANAGER/ADMIN)' })
+  async createDeliveryForOrder(
+    @Param('id') id: string,
+    @Body() dto: CreateOrderDeliveryDto,
+  ) {
+    return this.ordersService.createDeliveryForOrder(id, dto);
+  }
+
   @Get('orders')
   @Roles(Role.CLIENT)
   @ApiOperation({ summary: 'Get own orders (CLIENT only)' })
@@ -54,10 +65,26 @@ export class OrdersController {
     return this.ordersService.getClientOrders(user.sub, query.page, query.limit, query.status);
   }
 
+  @Get('orders/:id')
+  @Roles(Role.CLIENT)
+  @ApiOperation({ summary: 'Get own order by ID (CLIENT only)' })
+  @ApiOkResponse({ type: OrderEntity })
+  async getOwnOrderById(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.ordersService.getClientOrderById(user.sub, id);
+  }
+
   @Get('admin/orders')
   @Roles(Role.ADMIN, Role.SHOP_MANAGER)
   @ApiOperation({ summary: 'Get all orders (SHOP_MANAGER/ADMIN)' })
   async getAllOrders(@Query() query: QueryOrdersDto) {
     return this.ordersService.getAllOrders(query.page, query.limit, query.status);
+  }
+
+  @Get('admin/orders/:id')
+  @Roles(Role.ADMIN, Role.SHOP_MANAGER)
+  @ApiOperation({ summary: 'Get order by ID (SHOP_MANAGER/ADMIN)' })
+  @ApiOkResponse({ type: OrderEntity })
+  async getAdminOrderById(@Param('id') id: string) {
+    return this.ordersService.getAdminOrderById(id);
   }
 }
