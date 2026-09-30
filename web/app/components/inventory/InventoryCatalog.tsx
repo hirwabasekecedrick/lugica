@@ -24,7 +24,14 @@ import { useToast } from "@/app/components/ToastProvider";
  *  - Archived products are returned by the admin list and are filtered out
  *    here, with a toggle to reveal them.
  */
-export default function InventoryCatalog() {
+export default function InventoryCatalog({
+  createOpen,
+  onCreateOpenChange,
+}: {
+  /** Lets the sidebar open the "new product" form from outside this component. */
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
+}) {
   const productsQuery = useAdminProducts();
   const categoriesQuery = useCategories();
   const archive = useArchiveProduct();
@@ -34,7 +41,13 @@ export default function InventoryCatalog() {
 
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
+  const [ownShowCreate, setOwnShowCreate] = useState(false);
+  // Controlled when the parent passes createOpen, so the sidebar can open it.
+  const showCreate = createOpen ?? ownShowCreate;
+  const setShowCreate = (open: boolean) => {
+    setOwnShowCreate(open);
+    onCreateOpenChange?.(open);
+  };
   const [adjustFor, setAdjustFor] = useState<{ id: string; name: string } | null>(null);
 
   const products = productsQuery.data ?? [];
