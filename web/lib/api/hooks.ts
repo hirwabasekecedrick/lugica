@@ -121,7 +121,8 @@ export function useLastPurchased() {
 export function useAdminProducts(page?: number) {
   return useQuery<AdminProduct[]>({
     queryKey: qk.adminProducts(page),
-    queryFn: () => inventory.list(page, 100),
+    // The endpoint is paginated; consumers want the flat product list.
+    queryFn: async () => (await inventory.list(page, 100)).data,
   });
 }
 

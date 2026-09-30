@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { AdminProduct, Category, Product, ProductQuery } from "./types";
+import type { AdminProduct, Category, Paginated, Product, ProductQuery } from "./types";
 
 /**
  * Catalog (public) and admin inventory.
@@ -35,9 +35,9 @@ export const catalog = {
 };
 
 export const inventory = {
-  /** Includes ARCHIVED products and the category relation. */
+  /** Includes ARCHIVED products and the category relation. Paginated. */
   list: (page?: number, limit?: number) =>
-    api.get<AdminProduct[]>("/admin/products", { query: { page, limit } }),
+    api.get<Paginated<AdminProduct>>("/admin/products", { query: { page, limit } }),
 
   byId: (id: string) => api.get<AdminProduct>(`/admin/products/${id}`),
 
