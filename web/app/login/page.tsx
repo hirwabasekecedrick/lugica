@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="relative h-screen w-full bg-[#0b1324] text-white flex items-center justify-center p-3 sm:p-5 lg:p-6 overflow-hidden selection:bg-[#A0D585] selection:text-[#121e36]">
+    <main className="relative h-screen w-full bg-page text-text flex items-center justify-center p-3 sm:p-5 lg:p-6 overflow-hidden selection:bg-accent selection:text-on-accent">
       <StarfieldBackground />
 
       {/* Main Content Container - 50/50 split filling height */}
@@ -20,7 +20,7 @@ export default function LoginPage() {
           {/* LoginCard reads ?next= via useSearchParams, which requires a
               Suspense boundary for static rendering. */}
           <Suspense
-            fallback={<div className="w-full max-w-[440px] h-[520px] bg-[#131d33]/60 border border-[#2c426f] rounded-[28px]" />}
+            fallback={<div className="w-full max-w-[440px] h-[520px] bg-surface/60 border border-border rounded-[28px]" />}
           >
             <LoginCard />
           </Suspense>

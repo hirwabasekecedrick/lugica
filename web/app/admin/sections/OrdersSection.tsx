@@ -29,7 +29,7 @@ export default function OrdersSection() {
             setStatus((e.target.value || "") as OrderStatus | "");
             setPage(1);
           }}
-          className="bg-[#131e36] border border-[#263B6A] text-[#EEFABD] text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:border-[#A0D585] cursor-pointer"
+          className="bg-surface border border-border text-text text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:border-text-accent cursor-pointer"
         >
           <option value="">All statuses</option>
           <option value="PENDING_PAYMENT">Pending payment</option>
@@ -39,7 +39,7 @@ export default function OrdersSection() {
           <option value="CANCELLED">Cancelled</option>
         </select>
 
-        <p className="text-[11px] text-[#6984A9]">
+        <p className="text-[11px] text-text-muted">
           Read-only — the API has no order status mutation route.
         </p>
       </div>
@@ -51,10 +51,10 @@ export default function OrdersSection() {
       ) : orders.length === 0 ? (
         <EmptyState title="No orders" description="No orders match this filter." />
       ) : (
-        <div className="overflow-x-auto bg-[#0d1525] border border-[#263B6A] rounded-xl">
+        <div className="overflow-x-auto bg-page border border-border rounded-xl">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#131e36]/70 border-b border-[#263B6A] text-[#6984A9] text-[11px] font-semibold uppercase">
+              <tr className="bg-surface/70 border-b border-border text-text-muted text-[11px] font-semibold uppercase">
                 <th className="py-3 px-4">Reference</th>
                 <th className="py-3 px-4">Placed</th>
                 <th className="py-3 px-4">Items</th>
@@ -62,37 +62,37 @@ export default function OrdersSection() {
                 <th className="py-3 px-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#263B6A]/50">
+            <tbody className="divide-y divide-border/50">
               {orders.map((o) => (
-                <tr key={o.id} className="hover:bg-[#131e36]/40 transition-colors">
-                  <td className="py-3 px-4 font-mono text-[10px] text-[#EEFABD] break-all max-w-[120px]">
+                <tr key={o.id} className="hover:bg-sunken transition-colors">
+                  <td className="py-3 px-4 font-mono text-[10px] text-text break-all max-w-[120px]">
                     {o.id}
                   </td>
-                  <td className="py-3 px-4 text-[#6984A9] whitespace-nowrap">
+                  <td className="py-3 px-4 text-text-muted whitespace-nowrap">
                     {formatDateTime(o.createdAt)}
                   </td>
-                  <td className="py-3 px-4 text-white">
+                  <td className="py-3 px-4 text-text">
                     {(o.items ?? [])
                       .map((i) => `${i.productNameSnapshot} (x${i.quantity})`)
                       .join(", ")}
                   </td>
-                  <td className="py-3 px-4 font-mono font-bold text-[#A0D585] whitespace-nowrap">
+                  <td className="py-3 px-4 font-mono font-bold text-text-accent whitespace-nowrap">
                     {formatMoney(o.totalMinorUnits, o.currency)}
                   </td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                         o.status === "EXPIRED" || o.status === "CANCELLED"
-                          ? "bg-rose-500/15 text-rose-300 border-rose-400/30"
+                          ? "bg-danger/15 text-danger border-danger/30"
                           : o.status === "PENDING_PAYMENT"
-                            ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
-                            : "bg-[#A0D585]/15 text-[#A0D585] border-[#A0D585]/30"
+                            ? "bg-warning/15 text-warning border-warning/30"
+                            : "bg-accent/15 text-text-accent border-accent/30"
                       }`}
                     >
                       {orderStatusLabel(o.status)}
                     </span>
                     {o.status === "PENDING_PAYMENT" && (
-                      <span className="block text-[10px] text-[#6984A9] mt-1">
+                      <span className="block text-[10px] text-text-muted mt-1">
                         {formatCountdown(o.expiresAt)}
                       </span>
                     )}
@@ -105,7 +105,7 @@ export default function OrdersSection() {
       )}
 
       {meta && meta.total > 0 && (
-        <p className="text-xs text-[#6984A9]">
+        <p className="text-xs text-text-muted">
           Page {meta.page} · {meta.total} orders
         </p>
       )}

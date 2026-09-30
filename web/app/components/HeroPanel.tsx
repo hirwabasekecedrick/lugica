@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function HeroPanel() {
   return (
-    <div className="relative w-full h-full rounded-[28px] lg:rounded-[32px] overflow-hidden border border-[#2c426f] shadow-2xl flex flex-col justify-end group">
+    <div className="relative w-full h-full rounded-[28px] lg:rounded-[32px] overflow-hidden border border-border shadow-2xl flex flex-col justify-end group">
       {/* Background Hero Image - Real-time Delivery Courier & GPS Map */}
       <Image
         src="/lugica_delivery_hero.png"
@@ -32,7 +32,7 @@ export default function HeroPanel() {
         <h2 className="text-white text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] drop-shadow-lg uppercase font-sans">
           Track deliveries
           <br />
-          <span className="text-[#EEFABD]">in real-time</span>
+          <span className="text-text">in real-time</span>
         </h2>
       </div>
     </div>

@@ -4,7 +4,38 @@
  * Never import this from a client component: it reads secrets.
  */
 
-export const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:8080";
+/**
+ * Resolve and validate the API origin at module load.
+ *
+ * A malformed value here (a stray space, a trailing note from an editor) used
+ * to surface as `TypeError: Invalid URL` from deep inside the proxy, which
+ * gave no clue about the cause. Trim and validate here so the message names
+ * the offending variable.
+ */
+function resolveApiOrigin(): string {
+  const raw = process.env.API_ORIGIN?.trim() || "http://localhost:8080";
+
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(
+      `API_ORIGIN is not a valid URL: ${JSON.stringify(raw)}. ` +
+        `Set it in web/.env.local, e.g. API_ORIGIN=http://localhost:8080`,
+    );
+  }
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error(
+      `API_ORIGIN must use http or https, got ${JSON.stringify(raw)}`,
+    );
+  }
+
+  // Strip a trailing slash so `${API_ORIGIN}/${path}` never doubles up.
+  return url.origin;
+}
+
+export const API_ORIGIN = resolveApiOrigin();
 
 export const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "";
 

@@ -35,12 +35,12 @@ export default function StarfieldBackground() {
       initStars();
     };
 
-    // Color palette: #EEFABD, #A0D585, #6984A9, #263B6A
+    // Palette: #A0D585, #6984A9, #263B6A — tuned dark enough to read on pale.
     const colors = [
-      "rgba(255, 255, 255, ",
-      "rgba(238, 250, 189, ", // #EEFABD pale yellow/lime tint
-      "rgba(160, 213, 133, ", // #A0D585 sage green tint
-      "rgba(105, 132, 169, ", // #6984A9 slate blue tint
+      "rgba(38, 59, 106, ", // #263B6A navy
+      "rgba(105, 132, 169, ", // #6984A9 slate
+      "rgba(87, 121, 117, ", // mix(sage 40%, navy)
+      "rgba(160, 213, 133, ", // #A0D585 sage
     ];
 
     const initStars = () => {
@@ -97,7 +97,7 @@ export default function StarfieldBackground() {
         ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
         ctx.fillStyle = `${star.color}${Math.max(0.1, Math.min(1, star.opacity))})`;
         ctx.shadowBlur = star.size > 1.8 ? 6 : 0;
-        ctx.shadowColor = "rgba(238, 250, 189, 0.8)";
+        ctx.shadowColor = "rgba(105, 132, 169, 0.7)";
         ctx.fill();
       }
 
@@ -117,14 +117,14 @@ export default function StarfieldBackground() {
       {/* Dynamic starfield canvas */}
       <canvas ref={canvasRef} className="w-full h-full block" />
 
-      {/* Ambient Cosmic Radial Gradients using palette: #263B6A, #6984A9, #A0D585, #EEFABD */}
-      <div 
+      {/* Ambient radial gradients from the palette: #A0D585, #6984A9, #263B6A */}
+      <div
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(circle at 25% 85%, rgba(38, 59, 106, 0.75) 0%, rgba(15, 23, 42, 0.4) 45%, transparent 75%),
-            radial-gradient(circle at 85% 90%, rgba(160, 213, 133, 0.22) 0%, rgba(238, 250, 189, 0.1) 35%, transparent 60%),
-            radial-gradient(circle at 50% 15%, rgba(105, 132, 169, 0.35) 0%, transparent 65%)
+            radial-gradient(circle at 25% 85%, rgba(160, 213, 133, 0.30) 0%, rgba(205, 231, 188, 0.18) 45%, transparent 75%),
+            radial-gradient(circle at 85% 90%, rgba(105, 132, 169, 0.22) 0%, rgba(205, 231, 188, 0.12) 35%, transparent 60%),
+            radial-gradient(circle at 50% 15%, rgba(38, 59, 106, 0.10) 0%, transparent 65%)
           `
         }}
       />

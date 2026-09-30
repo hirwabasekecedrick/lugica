@@ -24,7 +24,7 @@ export default function InventoryPageClient() {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full bg-[#0b1324] overflow-hidden text-white font-sans">
+    <div className="flex h-screen w-full bg-page overflow-hidden text-text font-sans">
       <InventorySidebar
         activeTab={tab}
         onSelectTab={setTab}
