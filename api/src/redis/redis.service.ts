@@ -66,6 +66,10 @@ export class RedisService implements OnModuleDestroy {
     await this.client.del(key);
   }
 
+  get clientInstance(): Redis {
+    return this.client;
+  }
+
   async onModuleDestroy(): Promise<void> {
     await this.client.quit();
     this.logger.log('Redis disconnected');
