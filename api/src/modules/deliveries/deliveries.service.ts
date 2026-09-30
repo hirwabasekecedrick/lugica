@@ -191,4 +191,235 @@ export class DeliveriesService {
       return updatedDelivery;
     });
   }
+
+  // ─── Status Transitions ───────────────────────────────────────────────────
+
+  /** Valid transitions: fromStatus → toStatus[] */
+  private static readonly TRANSITIONS: Record<
+    DeliveryStatus,
+    DeliveryStatus[]
+  > = {
+    [DeliveryStatus.PENDING]: [
+      DeliveryStatus.ASSIGNED,
+      DeliveryStatus.CANCELLED,
+    ],
+    [DeliveryStatus.ASSIGNED]: [
+      DeliveryStatus.PICKED_UP,
+      DeliveryStatus.CANCELLED,
+    ],
+    [DeliveryStatus.PICKED_UP]: [
+      DeliveryStatus.IN_TRANSIT,
+      DeliveryStatus.CANCELLED,
+    ],
+    [DeliveryStatus.IN_TRANSIT]: [
+      DeliveryStatus.DELIVERED,
+      DeliveryStatus.FAILED,
+    ],
+    [DeliveryStatus.DELIVERED]: [],
+    [DeliveryStatus.CANCELLED]: [],
+    [DeliveryStatus.FAILED]: [],
+  };
+
+  /**
+   * Transition a delivery to a new status with full validation.
+   * Returns the updated delivery with relations.
+   */
+  async transitionStatus(
+    deliveryId: string,
+    toStatus: DeliveryStatus,
+    currentUser: JwtPayload,
+    notes?: string,
+  ) {
+    const delivery = await this.prisma.delivery.findUnique({
+      where: { id: deliveryId },
+      select: {
+        id: true,
+        status: true,
+        clientId: true,
+        driverId: true,
+      },
+    });
+
+    if (!delivery) {
+      throw new NotFoundException(
+        `Delivery with ID ${deliveryId} not found`,
+      );
+    }
+
+    // Validate the transition is allowed
+    const allowed =
+      DeliveriesService.TRANSITIONS[delivery.status] ?? [];
+    if (!allowed.includes(toStatus)) {
+      throw new BadRequestException(
+        `Cannot transition from ${delivery.status} to ${toStatus}`,
+      );
+    }
+
+    // Role-based checks for specific transitions
+    this.enforceTransitionPermissions(
+      delivery,
+      toStatus,
+      currentUser,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedDelivery = await tx.delivery.update({
+        where: { id: deliveryId },
+        data: {
+          status: toStatus,
+          ...(toStatus === DeliveryStatus.DELIVERED
+            ? { deliveredAt: new Date() }
+            : {}),
+        },
+        include: {
+          client: {
+            select: { id: true, name: true, email: true },
+          },
+          driver: {
+            select: { id: true, name: true, email: true },
+          },
+          vehicle: {
+            select: { id: true, plateNumber: true, type: true },
+          },
+        },
+      });
+
+      await tx.deliveryStatusHistory.create({
+        data: {
+          deliveryId,
+          fromStatus: delivery.status,
+          toStatus,
+          changedByUserId: currentUser.sub,
+          notes: notes ?? null,
+        },
+      });
+
+      return updatedDelivery;
+    });
+  }
+
+  /** Convenience: ASSIGNED → PICKED_UP (driver only) */
+  async pickup(
+    deliveryId: string,
+    currentUser: JwtPayload,
+    notes?: string,
+  ) {
+    return this.transitionStatus(
+      deliveryId,
+      DeliveryStatus.PICKED_UP,
+      currentUser,
+      notes,
+    );
+  }
+
+  /** Convenience: PICKED_UP → IN_TRANSIT (driver only) */
+  async startTransit(
+    deliveryId: string,
+    currentUser: JwtPayload,
+    notes?: string,
+  ) {
+    return this.transitionStatus(
+      deliveryId,
+      DeliveryStatus.IN_TRANSIT,
+      currentUser,
+      notes,
+    );
+  }
+
+  /** Convenience: IN_TRANSIT → DELIVERED (driver only) */
+  async deliver(
+    deliveryId: string,
+    currentUser: JwtPayload,
+    notes?: string,
+  ) {
+    return this.transitionStatus(
+      deliveryId,
+      DeliveryStatus.DELIVERED,
+      currentUser,
+      notes,
+    );
+  }
+
+  /** Convenience: any cancelable state → CANCELLED (admin or client) */
+  async cancel(
+    deliveryId: string,
+    currentUser: JwtPayload,
+    notes?: string,
+  ) {
+    return this.transitionStatus(
+      deliveryId,
+      DeliveryStatus.CANCELLED,
+      currentUser,
+      notes,
+    );
+  }
+
+  /** Convenience: IN_TRANSIT → FAILED (driver or admin) */
+  async fail(
+    deliveryId: string,
+    currentUser: JwtPayload,
+    notes?: string,
+  ) {
+    return this.transitionStatus(
+      deliveryId,
+      DeliveryStatus.FAILED,
+      currentUser,
+      notes,
+    );
+  }
+
+  // ─── Private Helpers ──────────────────────────────────────────────────────
+
+  private enforceTransitionPermissions(
+    delivery: {
+      id: string;
+      status: DeliveryStatus;
+      clientId: string;
+      driverId: string | null;
+    },
+    toStatus: DeliveryStatus,
+    currentUser: JwtPayload,
+  ): void {
+    // Admin can do everything
+    if (currentUser.role === Role.ADMIN) {
+      return;
+    }
+
+    // Driver transitions: PICKED_UP, IN_TRANSIT, DELIVERED, FAILED
+    const driverTransitions: DeliveryStatus[] = [
+      DeliveryStatus.PICKED_UP,
+      DeliveryStatus.IN_TRANSIT,
+      DeliveryStatus.DELIVERED,
+      DeliveryStatus.FAILED,
+    ];
+
+    if (driverTransitions.includes(toStatus)) {
+      if (currentUser.role !== Role.DRIVER) {
+        throw new ForbiddenException(
+          'Only the assigned driver or an admin can perform this transition',
+        );
+      }
+      if (delivery.driverId !== currentUser.sub) {
+        throw new ForbiddenException(
+          'You can only update deliveries assigned to you',
+        );
+      }
+      return;
+    }
+
+    // CANCELLED: admin or owning client
+    if (toStatus === DeliveryStatus.CANCELLED) {
+      if (
+        currentUser.role === Role.CLIENT &&
+        delivery.clientId === currentUser.sub
+      ) {
+        return;
+      }
+      throw new ForbiddenException(
+        'Only the owning client or an admin can cancel a delivery',
+      );
+    }
+
+    throw new ForbiddenException('Insufficient permissions');
+  }
 }

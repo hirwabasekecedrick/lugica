@@ -10,7 +10,7 @@ async function main() {
     process.exit(1);
   }
 
-  const defaultPassword = process.env.SEED_DEFAULT_PASSWORD || 'Password@123';
+  const defaultPassword = process.env.SEED_DEFAULT_PASSWORD || 'Admin@123';
   const passwordHash = await hash(defaultPassword, 12);
 
   console.log('Seeding Users...');
@@ -19,7 +19,7 @@ async function main() {
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@lugica.com';
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: { passwordHash },
     create: {
       email: adminEmail,
       name: 'System Admin',
@@ -34,7 +34,7 @@ async function main() {
   const managerEmail = process.env.MANAGER_EMAIL || 'manager@lugica.com';
   const manager = await prisma.user.upsert({
     where: { email: managerEmail },
-    update: {},
+    update: { passwordHash },
     create: {
       email: managerEmail,
       name: 'Shop Manager',
@@ -51,7 +51,7 @@ async function main() {
     const clientEmail = process.env[`CLIENT${i}_EMAIL`] || `client${i}@lugica.com`;
     const client = await prisma.user.upsert({
       where: { email: clientEmail },
-      update: {},
+      update: { passwordHash },
       create: {
         email: clientEmail,
         name: `Test Client ${i}`,
