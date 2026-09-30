@@ -2,11 +2,18 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import LugicaLogo from "../LugicaLogo";
-import { useAdminProducts, useGoodsReceipts, useLogout } from "@/lib/api/hooks";
+import {
+  useAdminProducts,
+  useDeliveries,
+  useGoodsReceipts,
+  useLogout,
+  useVehicles,
+} from "@/lib/api/hooks";
 import { useSession } from "@/app/lib/session-context";
 import { roleLabel, stockState } from "@/lib/format";
+import { hasRole, ADMIN_ROLES } from "@/lib/roles";
 import { useToast } from "../ToastProvider";
 
 type Tab = "overview" | "catalog" | "procurement";
@@ -42,11 +49,24 @@ export default function InventorySidebar({
   const session = useSession();
   const logout = useLogout();
   const router = useRouter();
+  const pathname = usePathname();
   const toast = useToast();
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false);
 
   const productsQuery = useAdminProducts();
   const receiptsQuery = useGoodsReceipts();
+  const deliveriesQuery = useDeliveries();
+  const vehiclesQuery = useVehicles();
+
+  // Admin-only links; the API would reject these for other roles anyway.
+  const isAdmin = hasRole(session, ADMIN_ROLES);
+
+  const pendingDeliveries = (deliveriesQuery.data ?? []).filter(
+    (d) => d.status === "PENDING",
+  ).length;
+  const activeVehicles = (vehiclesQuery.data ?? []).filter(
+    (v) => v.status === "ACTIVE",
+  ).length;
 
   const lowStockCount = (productsQuery.data ?? []).filter(
     (p) => p.status === "ACTIVE" && stockState(p.stockQuantity) !== "in-stock",
@@ -71,6 +91,21 @@ export default function InventorySidebar({
         ? "bg-[#263B6A] text-[#EEFABD]"
         : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
     }`;
+
+  /** Same treatment as navItemClass, for real <Link> destinations. */
+  const subLinkClass = (active: boolean) =>
+    `flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
+      active
+        ? "bg-[#263B6A] text-[#EEFABD]"
+        : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
+    }`;
+
+  const adminLinks = [
+    { href: "/admin/users", label: "Users & Drivers", icon: UsersIcon },
+    { href: "/admin/vehicles", label: "Vehicles", icon: VehicleIcon, badge: activeVehicles },
+    { href: "/admin/deliveries", label: "Deliveries", icon: DeliveryIcon, badge: pendingDeliveries },
+    { href: "/admin/orders", label: "Orders", icon: OrdersIcon },
+  ];
 
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-hidden select-none">
@@ -233,8 +268,48 @@ export default function InventorySidebar({
                 <span>Checkout Flow</span>
               </Link>
             </li>
+            <li>
+              <Link
+                href="/account"
+                onClick={onCloseMobile}
+                className={subLinkClass(pathname === "/account")}
+              >
+                <AccountIcon className="w-4 h-4 flex-shrink-0" />
+                <span>My Account</span>
+              </Link>
+            </li>
           </ul>
         </div>
+
+        {/* Administration — ADMIN only, so the API never rejects these links */}
+        {isAdmin && (
+          <div>
+            <p className="text-[#6984A9]/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
+              ADMINISTRATION
+            </p>
+            <ul className="space-y-0.5">
+              {adminLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    onClick={onCloseMobile}
+                    className={subLinkClass(pathname === link.href)}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <link.icon className="w-4 h-4 flex-shrink-0" />
+                      <span>{link.label}</span>
+                    </div>
+                    {!!link.badge && (
+                      <span className="text-[10px] font-bold bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded-full">
+                        {link.badge}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </nav>
 
       {/* Warehouse Status banner */}
@@ -346,6 +421,53 @@ function CheckoutIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 20 20" fill="currentColor">
       <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
       <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h3a1 1 0 100-2H9z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function AccountIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M10 9a3.5 3.5 0 100-7 3.5 3.5 0 000 7zm-7 8a7 7 0 1114 0H3z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function UsersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
+      <path d="M7 9a3 3 0 100-6 3 3 0 000 6zM1 17v-1a5 5 0 0110 0v1H1zm12.5-7.6A2.5 2.5 0 1014.9 4a3 3 0 01-1.4 5.4zM14 17v-1a4.5 4.5 0 013.5-4.4V17H14z" />
+    </svg>
+  );
+}
+
+function VehicleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M2 12V7a1 1 0 011-1h9a1 1 0 011 1v5" strokeLinecap="round" />
+      <path d="M2 12h16v3a1 1 0 01-1 1h-1.5" strokeLinecap="round" />
+      <path d="M4 16H2.5A1.5 1.5 0 011 14.5V12" strokeLinecap="round" />
+      <circle cx="6" cy="14" r="1.75" />
+      <circle cx="14" cy="14" r="1.75" />
+    </svg>
+  );
+}
+
+function DeliveryIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M10 17s5-4.6 5-8a5 5 0 10-10 0c0 3.4 5 8 5 8z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="10" cy="9" r="1.75" />
+    </svg>
+  );
+}
+
+function OrdersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M4 2.5h9L17 6v11a1 1 0 01-1 1H4a1 1 0 01-1-1v-13a1 1 0 011-1z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 2.5V6h4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.5 10h7M6.5 13h5" strokeLinecap="round" />
     </svg>
   );
 }
