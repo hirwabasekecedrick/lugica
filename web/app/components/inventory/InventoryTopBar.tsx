@@ -2,24 +2,39 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useStore } from "../../lib/store";
+import { useCart } from "@/lib/api/hooks";
+import { useSession } from "@/app/lib/session-context";
+import { roleLabel } from "@/lib/format";
+
+type Tab = "overview" | "catalog" | "procurement";
 
 interface InventoryTopBarProps {
-  activeTab?: "overview" | "catalog" | "procurement";
-  onSelectTab?: (tab: "overview" | "catalog" | "procurement") => void;
+  activeTab?: Tab;
+  onSelectTab?: (tab: Tab) => void;
   onOpenMobileMenu?: () => void;
 }
 
 const dateRanges = ["Last 7 days", "Last 30 days", "Last 90 days"];
 
+/**
+ * Warehouse top bar, restored to the original mock design.
+ *
+ * The greeting uses the session display name rather than a hardcoded first
+ * name, and the cart badge is the real item count. The date-range picker is
+ * deliberately inert: it is a visual control in the original design too, and
+ * no endpoint accepts a date range (docs/API-GAPS.md #15).
+ */
 export default function InventoryTopBar({
   activeTab = "overview",
   onSelectTab,
   onOpenMobileMenu,
 }: InventoryTopBarProps) {
-  const { currentRole, cart } = useStore();
+  const session = useSession();
+  const cartQuery = useCart();
   const [dateRange, setDateRange] = useState("Last 7 days");
   const [dateOpen, setDateOpen] = useState(false);
+
+  const cartCount = (cartQuery.data?.items ?? []).length;
 
   const now = new Date();
   const dayName = now.toLocaleDateString("en-US", { weekday: "short" });
@@ -29,10 +44,10 @@ export default function InventoryTopBar({
     now.getHours() < 12
       ? "morning"
       : now.getHours() < 18
-      ? "afternoon"
-      : "evening";
+        ? "afternoon"
+        : "evening";
 
-  const tabs: { id: "overview" | "catalog" | "procurement"; label: string }[] = [
+  const tabs: { id: Tab; label: string }[] = [
     { id: "overview", label: "Dashboard" },
     { id: "catalog", label: "Inventory Catalog" },
     { id: "procurement", label: "Procurement Batches" },
@@ -59,11 +74,13 @@ export default function InventoryTopBar({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-[#EEFABD] text-base sm:text-xl font-bold tracking-tight">
-                Good {greeting}, Maurice
+                Good {greeting}, {session?.displayName ?? "there"}
               </h1>
-              <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-[#A0D585]/15 text-[#A0D585] border border-[#A0D585]/30 uppercase">
-                {currentRole.replace("_", " ")}
-              </span>
+              {session && (
+                <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-[#A0D585]/15 text-[#A0D585] border border-[#A0D585]/30 uppercase">
+                  {roleLabel(session.role)}
+                </span>
+              )}
             </div>
             <p className="text-[#6984A9] text-[11px] sm:text-xs">
               {dayName}, {monthName} {day} &bull; Lugica Express Central Hub
@@ -80,9 +97,9 @@ export default function InventoryTopBar({
             <path fillRule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
           </svg>
           <span>Shop</span>
-          {cart.length > 0 && (
+          {cartCount > 0 && (
             <span className="w-4 h-4 rounded-full bg-[#A0D585] text-[#0d1525] text-[10px] font-bold flex items-center justify-center">
-              {cart.length}
+              {cartCount}
             </span>
           )}
         </Link>
@@ -116,9 +133,9 @@ export default function InventoryTopBar({
             <path fillRule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
           </svg>
           <span>Client Store</span>
-          {cart.length > 0 && (
+          {cartCount > 0 && (
             <span className="w-4 h-4 rounded-full bg-[#A0D585] text-[#0d1525] text-[10px] font-bold flex items-center justify-center">
-              {cart.length}
+              {cartCount}
             </span>
           )}
         </Link>

@@ -2,18 +2,35 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import LugicaLogo from "../LugicaLogo";
-import { useStore } from "../../lib/store";
+import { useAdminProducts, useGoodsReceipts, useLogout } from "@/lib/api/hooks";
+import { useSession } from "@/app/lib/session-context";
+import { roleLabel, stockState } from "@/lib/format";
+import { useToast } from "../ToastProvider";
+
+type Tab = "overview" | "catalog" | "procurement";
 
 interface InventorySidebarProps {
-  activeTab?: "overview" | "catalog" | "procurement";
-  onSelectTab?: (tab: "overview" | "catalog" | "procurement") => void;
+  activeTab?: Tab;
+  onSelectTab?: (tab: Tab) => void;
   onOpenAddProduct?: () => void;
   onOpenProcure?: () => void;
   mobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
 
+/**
+ * Warehouse sidebar, restored to the original mock design.
+ *
+ * Differences from the mock are data-only:
+ *  - the role switcher is gone. It called `switchRole` in the fake store, which
+ *    would now be a privilege-escalation control, so the role is read-only.
+ *  - the hardcoded "Maurice I." / "Manager ID #4092" become the session's
+ *    display name and email. The API exposes no name/phone (API-GAPS #1).
+ *  - badges are real: low stock comes from the product list, the procurement
+ *    count from goods receipts, and the cart count in the top bar.
+ */
 export default function InventorySidebar({
   activeTab = "overview",
   onSelectTab,
@@ -22,16 +39,38 @@ export default function InventorySidebar({
   mobileOpen = false,
   onCloseMobile,
 }: InventorySidebarProps) {
-  const { currentRole, switchRole, procurementBatches, products } = useStore();
+  const session = useSession();
+  const logout = useLogout();
+  const router = useRouter();
+  const toast = useToast();
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
-  const lowStockCount = products.filter((p) => p.status === "low-stock").length;
+  const productsQuery = useAdminProducts();
+  const receiptsQuery = useGoodsReceipts();
 
-  const handleTabClick = (tab: "overview" | "catalog" | "procurement") => {
+  const lowStockCount = (productsQuery.data ?? []).filter(
+    (p) => p.status === "ACTIVE" && stockState(p.stockQuantity) !== "in-stock",
+  ).length;
+  const receiptCount = (receiptsQuery.data ?? []).length;
+
+  async function handleSignOut() {
+    // Replace, so the back button cannot return to an authenticated page.
+    await logout.mutateAsync().catch(() => undefined);
+    toast.info("Signed out", "See you next time.");
+    router.replace("/login");
+  }
+
+  const handleTabClick = (tab: Tab) => {
     if (onSelectTab) onSelectTab(tab);
     if (onCloseMobile) onCloseMobile();
   };
+
+  const navItemClass = (active: boolean) =>
+    `w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
+      active
+        ? "bg-[#263B6A] text-[#EEFABD]"
+        : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
+    }`;
 
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-hidden select-none">
@@ -53,58 +92,22 @@ export default function InventorySidebar({
           )}
         </div>
 
-        {/* User selector & Role indicator */}
-        <div className="relative">
-          <button
-            onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-            className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-[#263B6A]/40 transition-colors text-left group"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-[#263B6A] flex items-center justify-center text-[11px] font-bold text-[#A0D585] flex-shrink-0">
-                M
-              </div>
-              <div className="truncate">
-                <span className="text-[#EEFABD] text-xs font-semibold block leading-tight truncate">
-                  Maurice I.
-                </span>
-                <span className="text-[10px] text-[#A0D585] font-mono capitalize">
-                  {currentRole.replace("_", " ")}
-                </span>
-              </div>
+        {/* Identity + role indicator. Read-only: role now comes from the JWT. */}
+        {session && (
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
+            <div className="w-6 h-6 rounded bg-[#263B6A] flex items-center justify-center text-[11px] font-bold text-[#A0D585] flex-shrink-0">
+              {session.initials.charAt(0)}
             </div>
-            <ChevronDownIcon className="w-3 h-3 text-[#6984A9] flex-shrink-0" />
-          </button>
-
-          {/* Role selector dropdown */}
-          {roleMenuOpen && (
-            <div className="absolute left-0 right-0 top-full mt-1 bg-[#131e36] border border-[#263B6A] rounded-xl p-1.5 shadow-2xl z-50 animate-fadeIn text-xs">
-              <p className="text-[10px] font-semibold text-[#6984A9] uppercase px-2 py-1">
-                Switch Active Role
-              </p>
-              {(["shop_manager", "admin", "client"] as const).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => {
-                    switchRole(r);
-                    setRoleMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-md font-medium capitalize flex items-center justify-between transition-colors cursor-pointer ${
-                    currentRole === r
-                      ? "bg-[#263B6A] text-[#EEFABD]"
-                      : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-white"
-                  }`}
-                >
-                  <span>{r.replace("_", " ")}</span>
-                  {currentRole === r && (
-                    <svg className="w-3.5 h-3.5 text-[#A0D585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </button>
-              ))}
+            <div className="truncate">
+              <span className="text-[#EEFABD] text-xs font-semibold block leading-tight truncate">
+                {session.displayName}
+              </span>
+              <span className="text-[10px] text-[#A0D585] font-mono capitalize">
+                {roleLabel(session.role)}
+              </span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Action Button */}
@@ -161,14 +164,7 @@ export default function InventorySidebar({
           </p>
           <ul className="space-y-0.5">
             <li>
-              <button
-                onClick={() => handleTabClick("overview")}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
-                  activeTab === "overview"
-                    ? "bg-[#263B6A] text-[#EEFABD]"
-                    : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
-                }`}
-              >
+              <button onClick={() => handleTabClick("overview")} className={navItemClass(activeTab === "overview")}>
                 <DashboardIcon className="w-4 h-4 flex-shrink-0" />
                 <span>Dashboard</span>
               </button>
@@ -176,11 +172,7 @@ export default function InventorySidebar({
             <li>
               <button
                 onClick={() => handleTabClick("catalog")}
-                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
-                  activeTab === "catalog"
-                    ? "bg-[#263B6A] text-[#EEFABD]"
-                    : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
-                }`}
+                className={`${navItemClass(activeTab === "catalog")} justify-between`}
               >
                 <div className="flex items-center gap-2.5">
                   <CatalogIcon className="w-4 h-4 flex-shrink-0" />
@@ -196,18 +188,14 @@ export default function InventorySidebar({
             <li>
               <button
                 onClick={() => handleTabClick("procurement")}
-                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
-                  activeTab === "procurement"
-                    ? "bg-[#263B6A] text-[#EEFABD]"
-                    : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
-                }`}
+                className={`${navItemClass(activeTab === "procurement")} justify-between`}
               >
                 <div className="flex items-center gap-2.5">
                   <ProcurementIcon className="w-4 h-4 flex-shrink-0" />
                   <span>Procurement</span>
                 </div>
                 <span className="text-[10px] font-bold bg-[#A0D585]/20 text-[#A0D585] px-1.5 py-0.2 rounded-full">
-                  {procurementBatches.length}
+                  {receiptCount}
                 </span>
               </button>
             </li>
@@ -264,24 +252,28 @@ export default function InventorySidebar({
       <div className="border-t border-[#263B6A] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#263B6A] to-[#6984A9] flex items-center justify-center text-[11px] font-bold text-[#EEFABD] flex-shrink-0">
-            MI
+            {session?.initials ?? "--"}
           </div>
           <div className="truncate">
             <span className="text-[#c0c1d4] text-xs font-medium block truncate max-w-[90px]">
-              Maurice IRAGABA
+              {session?.displayName ?? "Signed out"}
             </span>
-            <span className="text-[10px] text-[#6984A9] block">Manager ID #4092</span>
+            <span className="text-[10px] text-[#6984A9] block truncate max-w-[90px]">
+              {session?.email ?? ""}
+            </span>
           </div>
         </div>
-        <Link
-          href="/login"
-          title="Sign out / Switch user"
-          className="text-[#6984A9] hover:text-[#EEFABD] transition-colors p-1"
+        <button
+          onClick={handleSignOut}
+          disabled={logout.isPending}
+          title="Sign out"
+          aria-label="Sign out"
+          className="text-[#6984A9] hover:text-[#EEFABD] transition-colors p-1 cursor-pointer disabled:opacity-50"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-        </Link>
+        </button>
       </div>
     </div>
   );

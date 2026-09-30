@@ -7,3 +7,4 @@ coverage/
 build/
 .next/
 .expo/
+.kilo/

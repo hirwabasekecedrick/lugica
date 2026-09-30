@@ -2,12 +2,17 @@ import React from "react";
 
 interface ProductIconProps {
   name?: string;
+  /** Category name. ProductIcon matches on it as well as the product name. */
   category?: string;
   className?: string;
 }
 
-export default function ProductIcon({ name = "package", category, className = "w-4 h-4" }: ProductIconProps) {
-  const iconKey = name.toLowerCase();
+export default function ProductIcon({
+  name = "package",
+  category,
+  className = "w-4 h-4",
+}: ProductIconProps) {
+  const iconKey = `${name} ${category ?? ""}`.toLowerCase();
 
   if (iconKey.includes("gps") || iconKey.includes("tracker")) {
     // Navigation / GPS satellite signal icon

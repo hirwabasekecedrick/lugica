@@ -1,254 +1,362 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import LugicaLogo from "./LugicaLogo";
+import { useToast } from "./ToastProvider";
+import { useLogin, useRegister } from "@/lib/api/hooks";
+import { ApiError } from "@/lib/api/errors";
 
+type Mode = "signin" | "signup";
+
+/** Turn an API rejection into a sentence worth reading. */
+function friendlyError(err: unknown, context: "login" | "register"): string {
+  if (!(err instanceof ApiError)) return (err as Error).message;
+
+  // The BFF's own 502 means the API could not be reached at all. Say so,
+  // rather than blaming the user's credentials or asking them to retry.
+  if (err.message === "API unreachable") {
+    return "Cannot reach the Lugica API. Make sure it is running on port 8080.";
+  }
+
+  // Validation issues arrive as ["path: message", ...]; show the first.
+  const fieldIssue = Object.entries(err.fieldErrors).find(([field]) => field !== "_form");
+  if (fieldIssue) return fieldIssue[1];
+  if (err.fieldErrors._form) return err.fieldErrors._form;
+
+  if (err.status === 401) return "Invalid email or password.";
+  if (err.status === 403) return "Your account is inactive. Contact an administrator.";
+  if (err.message === "Email already registered") {
+    return "That email is already registered. Try signing in instead.";
+  }
+  if (err.status === 429) {
+    return "Too many attempts. Wait a minute and try again.";
+  }
+  if (err.status >= 500) {
+    return `The server returned an error (${err.status}). ${err.message}`;
+  }
+
+  return err.message || (context === "login" ? "Sign-in failed." : "Sign-up failed.");
+}
+
+/**
+ * Real authentication against the BFF.
+ *
+ * `POST /auth/register` returns only the created user and no tokens
+ * (auth.service.ts:36), so signup registers and then logs in. The API rejects
+ * passwords under 8 characters, which is mirrored here so the user is told
+ * before a round trip.
+ */
 export default function LoginCard() {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [signUpStep, setSignUpStep] = useState<1 | 2>(1);
-  const [fullName, setFullName] = useState("");
-  const [telephone, setTelephone] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next");
+  const toast = useToast();
+
+  const login = useLogin();
+  const register = useRegister();
+
+  const [mode, setMode] = useState<Mode>("signin");
+  const [step, setStep] = useState<1 | 2>(1);
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
-  };
+  const busy = login.isPending || register.isPending;
 
-  const handleSocialClick = (provider: string) => {
-    showToast(`Authenticating with ${provider} delivery portal...`);
-  };
+  function destination(role?: string | null): string {
+    // Only allow same-origin paths, so ?next= cannot become an open redirect.
+    if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
+      return nextPath;
+    }
+    return role === "ADMIN" ? "/inventory" : "/shop";
+  }
 
-  const handleToggleSignUp = () => {
-    setIsSignUp(!isSignUp);
-    setSignUpStep(1);
-  };
-
-  const handleNextStep = (e: React.FormEvent) => {
+  function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
-    if (!fullName.trim()) {
-      showToast("Please enter your full name.");
-      return;
-    }
-    if (!telephone.trim()) {
-      showToast("Please enter your telephone number.");
-      return;
-    }
-    setSignUpStep(2);
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+    login.mutate(
+      { email: email.trim(), password },
+      {
+        onSuccess: (data) => {
+          toast.success("Welcome back", "You are signed in.");
+          router.push(destination(data.role));
+        },
+        onError: (err) => {
+          // A downed API is not the user's fault, so say what is wrong rather
+          // than implying they mistyped something.
+          if (err instanceof ApiError && err.message === "API unreachable") {
+            toast.error("Server unreachable", friendlyError(err, "login"));
+            return;
+          }
+          toast.error("Sign-in failed", friendlyError(err, "login"));
+        },
+      },
+    );
+  }
+
+  function handleStepOne(e: React.FormEvent) {
     e.preventDefault();
-    if (!isSignUp) {
-      if (!email) {
-        showToast("Please enter a valid client email address.");
-        return;
-      }
-      showToast(`Connecting to live tracking as ${email}...`);
+
+    if (!name.trim()) {
+      toast.warning("Name required", "Please enter your full name.");
+      return;
+    }
+    if (!phone.trim()) {
+      toast.warning("Phone required", "Please enter your telephone number.");
+      return;
+    }
+    if (!email.trim()) {
+      toast.warning("Email required", "Please enter your email address.");
       return;
     }
 
-    // Sign up step 2 submission
-    if (!email) {
-      showToast("Please enter a valid client email address.");
+    setStep(2);
+  }
+
+  function handleSignUp(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!email.trim()) {
+      toast.warning("Email required", "Please enter your email address.");
       return;
     }
-    if (!password) {
-      showToast("Please enter a password.");
+    if (password.length < 8) {
+      toast.warning("Password too short", "Use at least 8 characters.");
       return;
     }
-    showToast(`Creating tracking account for ${fullName} (${email})...`);
-  };
+
+    register.mutate(
+      { email: email.trim(), password, name: name.trim(), phone: phone.trim() },
+      {
+        onSuccess: () => {
+          // Register returns no tokens, so sign in immediately afterwards.
+          toast.info("Account created", "Signing you in…");
+          login.mutate(
+            { email: email.trim(), password },
+            {
+              onSuccess: (data) => {
+                toast.success("Account created", "You are now signed in.");
+                router.push(destination(data.role));
+              },
+              onError: (err) => {
+                toast.success("Account created", "But sign-in failed.");
+                toast.error(
+                  "Could not sign in automatically",
+                  `${friendlyError(err, "login")} Please sign in manually.`,
+                );
+                setMode("signin");
+              },
+            },
+          );
+        },
+        onError: (err) => {
+          if (err instanceof ApiError && err.message === "API unreachable") {
+            toast.error("Server unreachable", friendlyError(err, "register"));
+            return;
+          }
+          toast.error("Sign-up failed", friendlyError(err, "register"));
+        },
+      },
+    );
+  }
+
+  const inputClass =
+    "w-full bg-[#182645] border border-[#2c426f] focus:border-[#A0D585] focus:ring-1 focus:ring-[#A0D585] rounded-xl px-4 py-2.5 text-white text-sm placeholder-[#6984A9] outline-none transition-all";
+  const labelClass = "block text-[10px] font-semibold uppercase tracking-wider text-[#6984A9] mb-1.5";
 
   return (
-    <div className="relative w-full max-w-[440px] bg-[#131d33]/90 backdrop-blur-xl border border-[#2c426f] rounded-[28px] p-6 sm:p-8 shadow-2xl flex flex-col justify-between transition-all my-auto">
-
-      {toastMessage && (
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#1f3054] text-[#EEFABD] text-xs px-4 py-2 rounded-full border border-[#A0D585]/50 shadow-lg flex items-center gap-2 animate-bounce z-50 whitespace-nowrap">
-          <span className="w-2 h-2 rounded-full bg-[#A0D585] animate-ping" />
-          {toastMessage}
-        </div>
-      )}
-
+    <div className="relative w-full max-w-[440px] bg-[#131d33]/90 backdrop-blur-xl border border-[#2c426f] rounded-[28px] p-6 sm:p-8 shadow-2xl flex flex-col justify-between my-auto">
       <div className="flex flex-col justify-center my-auto">
-
         <div className="flex justify-center mb-4">
           <LugicaLogo />
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-[1.15] text-center mb-1">
-          {isSignUp ? "Start tracking\nyour shipments." : "Track deliveries\nin real-time."}
+          {mode === "signup" ? (
+            <>
+              Start tracking
+              <br />
+              your shipments.
+            </>
+          ) : (
+            <>
+              Track deliveries
+              <br />
+              in real-time.
+            </>
+          )}
         </h1>
 
         <p className="text-[#a4b6cf] text-xs sm:text-sm text-center mb-4 font-normal">
-          {isSignUp
-            ? signUpStep === 1
+          {mode === "signup"
+            ? step === 1
               ? "Step 1 of 2: Personal Details"
               : "Step 2 of 2: Account Security"
             : "Sign in to track your live driver location"}
         </p>
 
-        {isSignUp && (
+        {mode === "signup" && (
           <div className="flex items-center gap-1.5 justify-center mb-4">
-            <span className={`h-1.5 rounded-full transition-all duration-300 ${signUpStep === 1 ? "w-8 bg-[#A0D585]" : "w-2 bg-[#2c426f]"}`} />
-            <span className={`h-1.5 rounded-full transition-all duration-300 ${signUpStep === 2 ? "w-8 bg-[#A0D585]" : "w-2 bg-[#2c426f]"}`} />
+            <span
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                step === 1 ? "w-8 bg-[#A0D585]" : "w-2 bg-[#2c426f]"
+              }`}
+            />
+            <span
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                step === 2 ? "w-8 bg-[#A0D585]" : "w-2 bg-[#2c426f]"
+              }`}
+            />
           </div>
         )}
 
-        {/* Form rendering depending on login / signup step */}
-        {isSignUp && signUpStep === 1 ? (
-          <form onSubmit={handleNextStep} autoComplete="off" autoCorrect="off" autoCapitalize="off" className="space-y-3">
+        {mode === "signup" && step === 1 && (
+          <form onSubmit={handleStepOne} className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-[#a4b6cf] mb-1">Full Name</label>
+              <label htmlFor="name" className={labelClass}>
+                Full name
+              </label>
               <input
-                type="text"
-                required
-                autoComplete="name"
-                spellCheck={false}
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full bg-[#182645] border border-[#2c426f] focus:border-[#A0D585] focus:ring-1 focus:ring-[#A0D585] rounded-xl px-4 py-2.5 text-white text-sm placeholder-[#6984A9] outline-none transition-all"
+                className={inputClass}
+                autoComplete="name"
               />
             </div>
-
             <div>
-              <label className="block text-xs font-medium text-[#a4b6cf] mb-1">Telephone Number</label>
+              <label htmlFor="phone" className={labelClass}>
+                Telephone
+              </label>
               <input
-                type="tel"
-                required
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+250 78X XXX XXX"
+                className={inputClass}
                 autoComplete="tel"
-                spellCheck={false}
-                placeholder="+1 (555) 000-0000"
-                value={telephone}
-                onChange={(e) => setTelephone(e.target.value)}
-                className="w-full bg-[#182645] border border-[#2c426f] focus:border-[#A0D585] focus:ring-1 focus:ring-[#A0D585] rounded-xl px-4 py-2.5 text-white text-sm placeholder-[#6984A9] outline-none transition-all"
               />
             </div>
-
-            <button
-              type="submit"
-              className="w-full py-3 px-4 bg-[#A0D585] hover:bg-[#EEFABD] text-[#121e36] font-bold text-sm rounded-xl transition-all shadow-lg shadow-[#263B6A]/50 active:scale-[0.99] cursor-pointer mt-1"
-            >
-              Next
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleSubmit} autoComplete="off" autoCorrect="off" autoCapitalize="off" className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-[#a4b6cf] mb-1">Client / Business Email</label>
+              <label htmlFor="signup-email" className={labelClass}>
+                Email
+              </label>
               <input
+                id="signup-email"
                 type="email"
-                required
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                placeholder="client@delivery.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#182645] border border-[#2c426f] focus:border-[#A0D585] focus:ring-1 focus:ring-[#A0D585] rounded-xl px-4 py-2.5 text-white text-sm placeholder-[#6984A9] outline-none transition-all"
+                placeholder="client@delivery.com"
+                className={inputClass}
+                autoComplete="email"
               />
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#a4b6cf] mb-1">Password</label>
-              <input
-                type="password"
-                required
-                autoComplete="new-password"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#182645] border border-[#2c426f] focus:border-[#A0D585] focus:ring-1 focus:ring-[#A0D585] rounded-xl px-4 py-2.5 text-white text-sm placeholder-[#6984A9] outline-none transition-all"
-              />
-            </div>
-
-            {isSignUp ? (
-              <div className="flex items-center gap-2 mt-1">
-                <button
-                  type="button"
-                  onClick={() => setSignUpStep(1)}
-                  className="py-3 px-4 bg-[#182645] hover:bg-[#21335b] border border-[#2c426f] text-white font-medium text-sm rounded-xl transition-all cursor-pointer"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 px-4 bg-[#A0D585] hover:bg-[#EEFABD] text-[#121e36] font-bold text-sm rounded-xl transition-all shadow-lg shadow-[#263B6A]/50 active:scale-[0.99] cursor-pointer"
-                >
-                  Create Account
-                </button>
-              </div>
-            ) : (
-              <button
-                type="submit"
-                className="w-full py-3 px-4 bg-[#A0D585] hover:bg-[#EEFABD] text-[#121e36] font-bold text-sm rounded-xl transition-all shadow-lg shadow-[#263B6A]/50 active:scale-[0.99] cursor-pointer mt-1"
-              >
-                Sign in
-              </button>
-            )}
+            <button
+              type="submit"
+              className="w-full py-3 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-xl transition-colors cursor-pointer mt-2"
+            >
+              Continue
+            </button>
           </form>
         )}
 
-        {/* Divider */}
-        <div className="relative flex items-center justify-center my-4">
-          <div className="border-t border-[#2a3e68] w-full" />
-          <span className="bg-[#131d33] px-3 text-xs text-[#6984A9] font-medium absolute">
-            or
-          </span>
-        </div>
+        {mode === "signup" && step === 2 && (
+          <form onSubmit={handleSignUp} className="space-y-3">
+            <div className="rounded-lg bg-[#182645]/60 border border-[#2c426f] px-3 py-2 text-[11px] text-[#a4b6cf]">
+              Signing up as <span className="text-white font-semibold">{name}</span>
+              <span className="block text-[#6984A9]">{email}</span>
+            </div>
+            <div>
+              <label htmlFor="signup-password" className={labelClass}>
+                Password
+              </label>
+              <input
+                id="signup-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                className={inputClass}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex-1 py-3 bg-[#182645] hover:bg-[#2c426f] text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={busy}
+                className="flex-1 py-3 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {busy ? "Creating…" : "Create account"}
+              </button>
+            </div>
+          </form>
+        )}
 
-        {/* Continue with Google button placed below form */}
+        {mode === "signin" && (
+          <form onSubmit={handleSignIn} className="space-y-3">
+            <div>
+              <label htmlFor="email" className={labelClass}>
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="client@delivery.com"
+                className={inputClass}
+                autoComplete="email"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className={labelClass}>
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={inputClass}
+                autoComplete="current-password"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full py-3 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-xl transition-colors cursor-pointer mt-2 disabled:opacity-50"
+            >
+              {busy ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+        )}
+
         <button
-          onClick={() => handleSocialClick("Google")}
-          type="button"
-          className="w-full py-3 px-4 flex items-center justify-center gap-3 bg-[#182645] hover:bg-[#21335b] text-white font-medium text-sm rounded-xl border border-[#2c426f] hover:border-[#6984A9] transition-all duration-200 cursor-pointer group shadow-sm active:scale-[0.99]"
+          onClick={() => {
+            setMode(mode === "signin" ? "signup" : "signin");
+            setStep(1);
+          }}
+          className="mt-5 w-full text-center text-xs text-[#a4b6cf] hover:text-white transition-colors cursor-pointer"
         >
-          {/* Google SVG Icon */}
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-            />
-          </svg>
-          <span>Continue with Google</span>
+          {mode === "signin"
+            ? "Need an account? Sign up"
+            : "Already have an account? Sign in"}
         </button>
-      </div>
-
-      {/* Footer link */}
-      <div className="pt-3 text-center border-t border-[#2a3e68]/50">
-        <p className="text-xs text-[#a4b6cf]">
-          {isSignUp ? "Already registered? " : "Don't have a tracking account? "}
-          <button
-            type="button"
-            onClick={handleToggleSignUp}
-            className="text-[#A0D585] font-semibold underline hover:text-[#EEFABD] transition-colors cursor-pointer"
-          >
-            {isSignUp ? "Sign in" : "Sign up"}
-          </button>
-        </p>
       </div>
     </div>
   );
 }
-
