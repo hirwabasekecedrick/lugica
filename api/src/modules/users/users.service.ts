@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { QueryUsersDto } from './dto/query-users.dto.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
+import { CreateSavedLocationDto } from './dto/create-saved-location.dto.js';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface.js';
 import { hash } from 'bcryptjs';
 
@@ -169,5 +170,41 @@ export class UsersService {
     });
 
     return updatedUser;
+  }
+
+  // ─── Saved Locations ──────────────────────────────────────────────────────
+
+  async createSavedLocation(userId: string, dto: CreateSavedLocationDto) {
+    return this.prisma.savedLocation.create({
+      data: {
+        userId,
+        name: dto.name,
+        address: dto.address,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+      },
+    });
+  }
+
+  async getSavedLocations(userId: string) {
+    return this.prisma.savedLocation.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async deleteSavedLocation(userId: string, locationId: string) {
+    const location = await this.prisma.savedLocation.findUnique({
+      where: { id: locationId },
+    });
+    if (!location) {
+      throw new NotFoundException('Saved location not found');
+    }
+    if (location.userId !== userId) {
+      throw new ForbiddenException('Cannot delete another user\'s location');
+    }
+    return this.prisma.savedLocation.delete({
+      where: { id: locationId },
+    });
   }
 }

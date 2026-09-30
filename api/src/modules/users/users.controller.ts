@@ -7,6 +7,7 @@ import {
   Body,
   Query,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,6 +23,7 @@ import { UsersService } from './users.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { QueryUsersDto } from './dto/query-users.dto.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
+import { CreateSavedLocationDto } from './dto/create-saved-location.dto.js';
 import { UserEntity } from './entities/user.entity.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -99,5 +101,49 @@ export class UsersController {
     @CurrentUser() currentUser: JwtPayload,
   ) {
     return this.usersService.update(id, dto, currentUser);
+  }
+
+  // ─── Saved Locations ──────────────────────────────────────────────────────
+
+  @Post('me/locations')
+  @ApiOperation({
+    summary: 'Save a location',
+    description: 'Allows a user to save a new location (e.g., Home, Work) for deliveries.',
+  })
+  @ApiOkResponse({ description: 'Location saved successfully' })
+  @ApiBadRequestResponse({ description: 'Validation error' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing access token' })
+  async createSavedLocation(
+    @Body() dto: CreateSavedLocationDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.usersService.createSavedLocation(currentUser.sub, dto);
+  }
+
+  @Get('me/locations')
+  @ApiOperation({
+    summary: 'Get saved locations',
+    description: 'Retrieves all saved locations for the authenticated user.',
+  })
+  @ApiOkResponse({ description: 'List of saved locations' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing access token' })
+  async getSavedLocations(@CurrentUser() currentUser: JwtPayload) {
+    return this.usersService.getSavedLocations(currentUser.sub);
+  }
+
+  @Delete('me/locations/:locationId')
+  @ApiOperation({
+    summary: 'Delete a saved location',
+    description: 'Deletes a saved location belonging to the authenticated user.',
+  })
+  @ApiOkResponse({ description: 'Location deleted successfully' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing access token' })
+  @ApiForbiddenResponse({ description: 'Cannot delete another user\'s location' })
+  @ApiNotFoundResponse({ description: 'Location not found' })
+  async deleteSavedLocation(
+    @Param('locationId') locationId: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.usersService.deleteSavedLocation(currentUser.sub, locationId);
   }
 }
