@@ -121,17 +121,17 @@ const VARIANTS: Record<
   { ring: string; icon: string; bar: string; iconPath: ReactNode }
 > = {
   success: {
-    ring: "border-[#A0D585]/40",
-    icon: "bg-[#A0D585]/15 text-[#A0D585]",
-    bar: "bg-[#A0D585]",
+    ring: "border-accent/40",
+    icon: "bg-accent/15 text-text-accent",
+    bar: "bg-accent",
     iconPath: (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
     ),
   },
   error: {
-    ring: "border-rose-400/40",
-    icon: "bg-rose-500/15 text-rose-300",
-    bar: "bg-rose-500",
+    ring: "border-danger/40",
+    icon: "bg-danger/15 text-danger",
+    bar: "bg-danger",
     iconPath: (
       <>
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -139,9 +139,9 @@ const VARIANTS: Record<
     ),
   },
   warning: {
-    ring: "border-amber-400/40",
-    icon: "bg-amber-400/15 text-amber-300",
-    bar: "bg-amber-400",
+    ring: "border-warning/40",
+    icon: "bg-warning/15 text-warning",
+    bar: "bg-warning",
     iconPath: (
       <>
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v4m0 4h.01" />
@@ -150,9 +150,9 @@ const VARIANTS: Record<
     ),
   },
   info: {
-    ring: "border-[#6984A9]/40",
-    icon: "bg-[#6984A9]/15 text-[#EEFABD]",
-    bar: "bg-[#6984A9]",
+    ring: "border-accent/40",
+    icon: "bg-accent/15 text-text",
+    bar: "bg-accent",
     iconPath: (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     ),
@@ -182,7 +182,7 @@ function ToastViewport({
             key={t.id}
             role="status"
             aria-live="polite"
-            className={`pointer-events-auto relative overflow-hidden flex items-start gap-3 rounded-xl border ${variant.ring} bg-[#131e36]/95 backdrop-blur-xl shadow-2xl shadow-black/40 py-3 pl-3.5 pr-10 animate-slideDown`}
+            className={`pointer-events-auto relative overflow-hidden flex items-start gap-3 rounded-xl border ${variant.ring} bg-surface/95 backdrop-blur-xl shadow-2xl shadow-overlay/30 py-3 pl-3.5 pr-10 animate-slideDown`}
           >
             <span
               className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${variant.icon}`}
@@ -193,9 +193,9 @@ function ToastViewport({
             </span>
 
             <div className="min-w-0 flex-1 pt-0.5">
-              <p className="text-[13px] font-semibold text-white leading-snug">{t.title}</p>
+              <p className="text-[13px] font-semibold text-text leading-snug">{t.title}</p>
               {t.description && (
-                <p className="text-[11px] text-[#6984A9] leading-relaxed mt-0.5 break-words">
+                <p className="text-[11px] text-text-muted leading-relaxed mt-0.5 break-words">
                   {t.description}
                 </p>
               )}
@@ -204,7 +204,7 @@ function ToastViewport({
             <button
               onClick={() => onDismiss(t.id)}
               aria-label="Dismiss notification"
-              className="absolute top-2.5 right-2.5 p-1 rounded-md text-[#6984A9] hover:text-white hover:bg-[#263B6A]/60 transition-colors cursor-pointer"
+              className="absolute top-2.5 right-2.5 p-1 rounded-md text-text-muted hover:text-text hover:bg-sunken transition-colors cursor-pointer"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />

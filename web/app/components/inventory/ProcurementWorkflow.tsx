@@ -143,19 +143,19 @@ export default function ProcurementWorkflow({
   }
 
   const inputClass =
-    "w-full bg-[#131e36] border border-[#263B6A] rounded-lg px-3 py-2 text-xs text-white placeholder-[#6984A9] outline-none focus:border-[#A0D585]";
+    "w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text placeholder-text-muted outline-none focus:border-text-accent";
 
   return (
     <div className="space-y-5">
-      <section className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 shadow-lg space-y-3">
-        <h3 className="text-sm font-bold text-white">Record a goods receipt</h3>
-        <p className="text-[11px] text-[#6984A9]">
+      <section className="bg-page border border-border rounded-xl p-5 shadow-lg space-y-3">
+        <h3 className="text-sm font-bold text-text">Record a goods receipt</h3>
+        <p className="text-[11px] text-text-muted">
           Accepted quantities are added to stock immediately, with a RECEIPT movement recorded per
           line.
         </p>
 
         {error && (
-          <p className="text-[11px] text-rose-300 border border-rose-400/30 bg-rose-500/10 rounded-lg px-3 py-2">
+          <p className="text-[11px] text-danger border border-danger/30 bg-danger/10 rounded-lg px-3 py-2">
             {error}
           </p>
         )}
@@ -163,7 +163,7 @@ export default function ProcurementWorkflow({
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#6984A9] mb-1">
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1">
                 Supplier
               </label>
               <div className="flex gap-2">
@@ -176,7 +176,7 @@ export default function ProcurementWorkflow({
                 <button
                   type="button"
                   onClick={() => setShowSupplierForm(!showSupplierForm)}
-                  className="px-3 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#6984A9] rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer"
+                  className="px-3 bg-surface hover:bg-sunken border border-border text-text-muted rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer"
                 >
                   {showSupplierForm ? "Close" : "New"}
                 </button>
@@ -184,7 +184,7 @@ export default function ProcurementWorkflow({
             </div>
 
             <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#6984A9] mb-1">
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1">
                 Delivered by
               </label>
               <input
@@ -224,21 +224,21 @@ export default function ProcurementWorkflow({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6984A9]">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
                 Line items
               </span>
               <button
                 type="button"
                 onClick={addLine}
                 disabled={products.length === 0}
-                className="px-2.5 py-1 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#A0D585] rounded text-[11px] font-semibold cursor-pointer disabled:opacity-40"
+                className="px-2.5 py-1 bg-surface hover:bg-sunken border border-border text-text-accent rounded text-[11px] font-semibold cursor-pointer disabled:opacity-40"
               >
                 + Add line
               </button>
             </div>
 
             {lines.length === 0 ? (
-              <p className="text-[11px] text-[#6984A9] py-4 text-center bg-[#131e36]/40 border border-[#263B6A]/50 rounded-lg">
+              <p className="text-[11px] text-text-muted py-4 text-center bg-surface/40 border border-border/50 rounded-lg">
                 No lines yet. Add the products being received.
               </p>
             ) : (
@@ -288,7 +288,7 @@ export default function ProcurementWorkflow({
                     <button
                       type="button"
                       onClick={() => removeLine(i)}
-                      className="sm:col-span-1 text-[#6984A9] hover:text-rose-400 cursor-pointer"
+                      className="sm:col-span-1 text-text-muted hover:text-danger cursor-pointer"
                     >
                       ✕
                     </button>
@@ -308,16 +308,16 @@ export default function ProcurementWorkflow({
           <button
             type="submit"
             disabled={createReceipt.isPending}
-            className="px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 bg-accent hover:bg-border text-on-accent rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
           >
             {createReceipt.isPending ? "Recording…" : "Record receipt"}
           </button>
         </form>
       </section>
 
-      <section className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 shadow-lg">
-        <h3 className="text-sm font-bold text-white mb-1">Receipt log</h3>
-        <p className="text-[11px] text-[#6984A9] mb-4">
+      <section className="bg-page border border-border rounded-xl p-5 shadow-lg">
+        <h3 className="text-sm font-bold text-text mb-1">Receipt log</h3>
+        <p className="text-[11px] text-text-muted mb-4">
           Line items are not included in the list response; open a receipt for its detail.
         </p>
 
@@ -332,18 +332,18 @@ export default function ProcurementWorkflow({
             {(receiptsQuery.data ?? []).map((r) => (
               <div
                 key={r.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-lg bg-[#131e36]/40 border border-[#263B6A]/40"
+                className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface/40 border border-border/40"
               >
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">
+                  <p className="text-xs font-semibold text-text truncate">
                     {r.supplier?.name ?? "Supplier"}
                   </p>
-                  <p className="text-[10px] text-[#6984A9]">
+                  <p className="text-[10px] text-text-muted">
                     {r.deliveredByName} · {formatDate(r.receivedAt)}
                     {r.invoiceNumber && ` · ${r.invoiceNumber}`}
                   </p>
                 </div>
-                <span className="text-[10px] text-[#6984A9] font-mono flex-shrink-0">
+                <span className="text-[10px] text-text-muted font-mono flex-shrink-0">
                   {r.items ? `${r.items.length} lines` : "—"}
                 </span>
               </div>
@@ -370,13 +370,13 @@ function NewSupplierForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Supplier name"
-        className="w-full bg-[#131e36] border border-[#263B6A] rounded-lg px-3 py-2 text-xs text-white placeholder-[#6984A9] outline-none focus:border-[#A0D585]"
+        className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text placeholder-text-muted outline-none focus:border-text-accent"
       />
       <button
         type="button"
         onClick={() => name.trim() && onSubmit(name.trim())}
         disabled={pending || !name.trim()}
-        className="px-3 py-2 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#A0D585] rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer disabled:opacity-40"
+        className="px-3 py-2 bg-surface hover:bg-sunken border border-border text-text-accent rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer disabled:opacity-40"
       >
         {pending ? "…" : "Add"}
       </button>

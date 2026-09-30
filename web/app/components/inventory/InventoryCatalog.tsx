@@ -89,7 +89,7 @@ export default function InventoryCatalog({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px]">
-          <span className="absolute inset-y-0 left-3.5 flex items-center text-[#6984A9]">
+          <span className="absolute inset-y-0 left-3.5 flex items-center text-text-muted">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -98,30 +98,30 @@ export default function InventoryCatalog({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, SKU, or category…"
-            className="w-full bg-[#131e36] border border-[#263B6A] focus:border-[#A0D585] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-[#6984A9] outline-none"
+            className="w-full bg-surface border border-border focus:border-text-accent rounded-lg pl-9 pr-3 py-2 text-xs text-text placeholder-text-muted outline-none"
           />
         </div>
 
-        <label className="flex items-center gap-1.5 text-xs text-[#6984A9] cursor-pointer">
+        <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer">
           <input
             type="checkbox"
             checked={showArchived}
             onChange={(e) => setShowArchived(e.target.checked)}
-            className="accent-[#A0D585]"
+            className="accent-accent"
           />
           Show archived
         </label>
 
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] rounded-lg text-xs font-bold transition-colors cursor-pointer"
+          className="px-4 py-2 bg-accent hover:bg-border text-on-accent rounded-lg text-xs font-bold transition-colors cursor-pointer"
         >
           {showCreate ? "Close" : "New product"}
         </button>
       </div>
 
       {lowStockCount > 0 && (
-        <p className="text-xs text-amber-300">
+        <p className="text-xs text-warning">
           {lowStockCount} active SKU{lowStockCount === 1 ? "" : "s"} at or below{" "}
           {LOW_STOCK_THRESHOLD} units.
         </p>
@@ -161,10 +161,10 @@ export default function InventoryCatalog({
           description={search ? "Try a different search term." : "Create a product to get started."}
         />
       ) : (
-        <div className="overflow-x-auto bg-[#0d1525] border border-[#263B6A] rounded-xl">
+        <div className="overflow-x-auto bg-page border border-border rounded-xl">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#131e36]/70 border-b border-[#263B6A] text-[#6984A9] text-[11px] font-semibold uppercase">
+              <tr className="bg-surface/70 border-b border-border text-text-muted text-[11px] font-semibold uppercase">
                 <th className="py-3 px-4">Product</th>
                 <th className="py-3 px-4">Category</th>
                 <th className="py-3 px-4">Price</th>
@@ -173,36 +173,36 @@ export default function InventoryCatalog({
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#263B6A]/50">
+            <tbody className="divide-y divide-border/50">
               {visible.map((p) => {
                 const state = stockState(p.stockQuantity);
                 return (
-                  <tr key={p.id} className="hover:bg-[#131e36]/40 transition-colors">
+                  <tr key={p.id} className="hover:bg-sunken transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-8 h-8 rounded-lg bg-[#131e36] border border-[#263B6A] flex items-center justify-center flex-shrink-0">
-                          <ProductIcon name={p.name} className="w-4 h-4 text-[#A0D585]" />
+                        <span className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+                          <ProductIcon name={p.name} className="w-4 h-4 text-text-accent" />
                         </span>
                         <div className="min-w-0">
-                          <p className="font-semibold text-white truncate max-w-[220px]">{p.name}</p>
-                          <p className="text-[10px] text-[#6984A9] font-mono">{p.sku}</p>
+                          <p className="font-semibold text-text truncate max-w-[220px]">{p.name}</p>
+                          <p className="text-[10px] text-text-muted font-mono">{p.sku}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-[#6984A9]">
+                    <td className="py-3 px-4 text-text-muted">
                       {p.category?.name ?? "—"}
                     </td>
-                    <td className="py-3 px-4 font-mono text-[#A0D585] whitespace-nowrap">
+                    <td className="py-3 px-4 font-mono text-text-accent whitespace-nowrap">
                       {formatMoney(p.priceMinorUnits, p.currency)}
                     </td>
                     <td className="py-3 px-4">
                       <span
                         className={`font-mono font-bold ${
                           state === "out-of-stock"
-                            ? "text-rose-400"
+                            ? "text-danger"
                             : state === "low-stock"
-                              ? "text-amber-300"
-                              : "text-white"
+                              ? "text-warning"
+                              : "text-text"
                         }`}
                       >
                         {p.stockQuantity}
@@ -212,8 +212,8 @@ export default function InventoryCatalog({
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                           p.status === "ACTIVE"
-                            ? "bg-[#A0D585]/15 text-[#A0D585] border-[#A0D585]/30"
-                            : "bg-[#6984A9]/15 text-[#6984A9] border-[#6984A9]/30"
+                            ? "bg-accent/15 text-text-accent border-accent/30"
+                            : "bg-accent/15 text-text-muted border-accent/30"
                         }`}
                       >
                         {p.status}
@@ -222,7 +222,7 @@ export default function InventoryCatalog({
                     <td className="py-3 px-4 text-right whitespace-nowrap">
                       <button
                         onClick={() => setAdjustFor({ id: p.id, name: p.name })}
-                        className="px-2.5 py-1 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#EEFABD] text-[11px] font-semibold rounded transition-colors cursor-pointer mr-1.5"
+                        className="px-2.5 py-1 bg-surface hover:bg-sunken border border-border text-text text-[11px] font-semibold rounded transition-colors cursor-pointer mr-1.5"
                       >
                         Adjust
                       </button>
@@ -235,7 +235,7 @@ export default function InventoryCatalog({
                             })
                           }
                           disabled={archive.isPending}
-                          className="px-2.5 py-1 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#6984A9] hover:text-rose-300 text-[11px] font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
+                          className="px-2.5 py-1 bg-surface hover:bg-sunken border border-border text-text-muted hover:text-danger text-[11px] font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
                         >
                           Archive
                         </button>
@@ -312,20 +312,20 @@ function CreateProductForm({
   }
 
   const inputClass =
-    "w-full bg-[#131e36] border border-[#263B6A] rounded-lg px-3 py-2 text-xs text-white placeholder-[#6984A9] outline-none focus:border-[#A0D585]";
+    "w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text placeholder-text-muted outline-none focus:border-text-accent";
 
   return (
     <form
       onSubmit={submit}
-      className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 space-y-3"
+      className="bg-page border border-border rounded-xl p-5 space-y-3"
     >
-      <h3 className="text-sm font-bold text-white">New product</h3>
-      <p className="text-[11px] text-[#6984A9]">
+      <h3 className="text-sm font-bold text-text">New product</h3>
+      <p className="text-[11px] text-text-muted">
         Stock is not set here — create the product, then use Adjust stock to bring it in.
       </p>
 
       {error && (
-        <p className="text-[11px] text-rose-300 border border-rose-400/30 bg-rose-500/10 rounded-lg px-3 py-2">
+        <p className="text-[11px] text-danger border border-danger/30 bg-danger/10 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
@@ -364,7 +364,7 @@ function CreateProductForm({
       <button
         type="submit"
         disabled={pending}
-        className="px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+        className="px-4 py-2 bg-accent hover:bg-border text-on-accent rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
       >
         {pending ? "Creating…" : "Create product"}
       </button>
@@ -420,20 +420,20 @@ function StockAdjustmentForm({
   }
 
   const inputClass =
-    "w-full bg-[#131e36] border border-[#263B6A] rounded-lg px-3 py-2 text-xs text-white placeholder-[#6984A9] outline-none focus:border-[#A0D585]";
+    "w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text placeholder-text-muted outline-none focus:border-text-accent";
 
   return (
     <form
       onSubmit={submit}
-      className="bg-[#0d1525] border border-[#A0D585]/40 rounded-xl p-5 space-y-3"
+      className="bg-page border border-accent/40 rounded-xl p-5 space-y-3"
     >
-      <h3 className="text-sm font-bold text-white">Adjust stock — {productName}</h3>
-      <p className="text-[11px] text-[#6984A9]">
+      <h3 className="text-sm font-bold text-text">Adjust stock — {productName}</h3>
+      <p className="text-[11px] text-text-muted">
         Positive adds stock, negative removes it. Both are recorded as a stock movement.
       </p>
 
       {error && (
-        <p className="text-[11px] text-rose-300 border border-rose-400/30 bg-rose-500/10 rounded-lg px-3 py-2">
+        <p className="text-[11px] text-danger border border-danger/30 bg-danger/10 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
@@ -461,14 +461,14 @@ function StockAdjustmentForm({
         <button
           type="submit"
           disabled={pending}
-          className="px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+          className="px-4 py-2 bg-accent hover:bg-border text-on-accent rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
         >
           {pending ? "Applying…" : "Apply adjustment"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#6984A9] rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+          className="px-4 py-2 bg-surface hover:bg-sunken border border-border text-text-muted rounded-lg text-xs font-semibold transition-colors cursor-pointer"
         >
           Cancel
         </button>

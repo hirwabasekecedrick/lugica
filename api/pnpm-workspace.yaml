@@ -1,7 +1,8 @@
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
-  '@scarf/scarf': set this to true or false
+  '@scarf/scarf': true
+  '@swc/core': true
   esbuild: true
   msgpackr-extract: true
   prisma: true
@@ -11,5 +12,6 @@ onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
   - '@scarf/scarf'
+  - '@swc/core'
   - esbuild
   - prisma

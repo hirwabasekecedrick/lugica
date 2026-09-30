@@ -164,17 +164,17 @@ export default function LoginCard() {
   }
 
   const inputClass =
-    "w-full bg-[#182645] border border-[#2c426f] focus:border-[#A0D585] focus:ring-1 focus:ring-[#A0D585] rounded-xl px-4 py-2.5 text-white text-sm placeholder-[#6984A9] outline-none transition-all";
-  const labelClass = "block text-[10px] font-semibold uppercase tracking-wider text-[#6984A9] mb-1.5";
+    "w-full bg-surface border border-border focus:border-text-accent focus:ring-1 focus:ring-text-accent rounded-xl px-4 py-2.5 text-text text-sm placeholder-text-muted outline-none transition-all";
+  const labelClass = "block text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1.5";
 
   return (
-    <div className="relative w-full max-w-[440px] bg-[#131d33]/90 backdrop-blur-xl border border-[#2c426f] rounded-[28px] p-6 sm:p-8 shadow-2xl flex flex-col justify-between my-auto">
+    <div className="relative w-full max-w-[440px] bg-surface/90 backdrop-blur-xl border border-border rounded-[28px] p-6 sm:p-8 shadow-2xl flex flex-col justify-between my-auto">
       <div className="flex flex-col justify-center my-auto">
         <div className="flex justify-center mb-4">
           <LugicaLogo />
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-[1.15] text-center mb-1">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight leading-[1.15] text-center mb-1">
           {mode === "signup" ? (
             <>
               Start tracking
@@ -190,7 +190,7 @@ export default function LoginCard() {
           )}
         </h1>
 
-        <p className="text-[#a4b6cf] text-xs sm:text-sm text-center mb-4 font-normal">
+        <p className="text-text-muted text-xs sm:text-sm text-center mb-4 font-normal">
           {mode === "signup"
             ? step === 1
               ? "Step 1 of 2: Personal Details"
@@ -202,12 +202,12 @@ export default function LoginCard() {
           <div className="flex items-center gap-1.5 justify-center mb-4">
             <span
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                step === 1 ? "w-8 bg-[#A0D585]" : "w-2 bg-[#2c426f]"
+                step === 1 ? "w-8 bg-accent" : "w-2 bg-sunken"
               }`}
             />
             <span
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                step === 2 ? "w-8 bg-[#A0D585]" : "w-2 bg-[#2c426f]"
+                step === 2 ? "w-8 bg-accent" : "w-2 bg-sunken"
               }`}
             />
           </div>
@@ -257,7 +257,7 @@ export default function LoginCard() {
             </div>
             <button
               type="submit"
-              className="w-full py-3 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-xl transition-colors cursor-pointer mt-2"
+              className="w-full py-3 bg-accent hover:bg-border text-on-accent font-bold text-xs rounded-xl transition-colors cursor-pointer mt-2"
             >
               Continue
             </button>
@@ -266,9 +266,9 @@ export default function LoginCard() {
 
         {mode === "signup" && step === 2 && (
           <form onSubmit={handleSignUp} className="space-y-3">
-            <div className="rounded-lg bg-[#182645]/60 border border-[#2c426f] px-3 py-2 text-[11px] text-[#a4b6cf]">
-              Signing up as <span className="text-white font-semibold">{name}</span>
-              <span className="block text-[#6984A9]">{email}</span>
+            <div className="rounded-lg bg-surface/60 border border-border px-3 py-2 text-[11px] text-text-muted">
+              Signing up as <span className="text-text font-semibold">{name}</span>
+              <span className="block text-text-muted">{email}</span>
             </div>
             <div>
               <label htmlFor="signup-password" className={labelClass}>
@@ -288,14 +288,14 @@ export default function LoginCard() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="flex-1 py-3 bg-[#182645] hover:bg-[#2c426f] text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                className="flex-1 py-3 bg-surface hover:bg-sunken text-text font-bold text-xs rounded-xl transition-colors cursor-pointer"
               >
                 Back
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="flex-1 py-3 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 bg-accent hover:bg-border text-on-accent font-bold text-xs rounded-xl transition-colors cursor-pointer disabled:opacity-50"
               >
                 {busy ? "Creating…" : "Create account"}
               </button>
@@ -338,7 +338,7 @@ export default function LoginCard() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-3 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-xl transition-colors cursor-pointer mt-2 disabled:opacity-50"
+              className="w-full py-3 bg-accent hover:bg-border text-on-accent font-bold text-xs rounded-xl transition-colors cursor-pointer mt-2 disabled:opacity-50"
             >
               {busy ? "Signing in…" : "Sign in"}
             </button>
@@ -350,7 +350,7 @@ export default function LoginCard() {
             setMode(mode === "signin" ? "signup" : "signin");
             setStep(1);
           }}
-          className="mt-5 w-full text-center text-xs text-[#a4b6cf] hover:text-white transition-colors cursor-pointer"
+          className="mt-5 w-full text-center text-xs text-text-muted hover:text-text transition-colors cursor-pointer"
         >
           {mode === "signin"
             ? "Need an account? Sign up"

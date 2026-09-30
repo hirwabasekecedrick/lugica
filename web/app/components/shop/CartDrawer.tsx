@@ -52,20 +52,20 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      <div onClick={onClose} className="fixed inset-0 bg-black/70 backdrop-blur-sm animate-fadeIn" />
+      <div onClick={onClose} className="fixed inset-0 bg-overlay/40 backdrop-blur-sm animate-fadeIn" />
 
-      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-[#0d1525] border-l border-[#263B6A] shadow-2xl flex flex-col z-10 animate-slideRight">
-        <div className="p-4 sm:p-5 border-b border-[#263B6A] flex items-center justify-between">
+      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-page border-l border-border shadow-2xl flex flex-col z-10 animate-slideRight">
+        <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-[#A0D585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
-            <h3 className="text-base font-bold text-white">Your Shopping Cart</h3>
-            <span className="text-xs text-[#6984A9]">({items.length} items)</span>
+            <h3 className="text-base font-bold text-text">Your Shopping Cart</h3>
+            <span className="text-xs text-text-muted">({items.length} items)</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#6984A9] hover:text-white hover:bg-[#131e36] transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-text-muted hover:text-text hover:bg-sunken transition-colors cursor-pointer"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -75,23 +75,23 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 inventory-scroll">
           {cartQuery.isLoading ? (
-            <div className="py-10 text-center text-xs text-[#6984A9]">Loading cart…</div>
+            <div className="py-10 text-center text-xs text-text-muted">Loading cart…</div>
           ) : cartQuery.isError ? (
-            <div className="py-10 text-center text-xs text-rose-300">
+            <div className="py-10 text-center text-xs text-danger">
               {cartQuery.error.message}
             </div>
           ) : items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#6984A9]">
-              <div className="w-14 h-14 rounded-2xl bg-[#131e36] border border-[#263B6A] flex items-center justify-center mb-3">
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-text-muted">
+              <div className="w-14 h-14 rounded-2xl bg-surface border border-border flex items-center justify-center mb-3">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
               </div>
-              <h4 className="text-white font-bold text-sm mb-1">Your cart is empty</h4>
+              <h4 className="text-text font-bold text-sm mb-1">Your cart is empty</h4>
               <p className="text-xs max-w-xs mb-4">Browse the catalog to add hardware to your order.</p>
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] text-[#A0D585] hover:text-[#EEFABD] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                className="px-4 py-2 bg-surface hover:bg-sunken border border-border text-text-accent hover:text-text text-xs font-semibold rounded-lg transition-colors cursor-pointer"
               >
                 Browse Products
               </button>
@@ -104,26 +104,26 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               return (
                 <div
                   key={item.productId}
-                  className="p-3 bg-[#131e36]/60 border border-[#263B6A] rounded-xl flex items-center gap-3"
+                  className="p-3 bg-surface/60 border border-border rounded-xl flex items-center gap-3"
                 >
-                  <div className="relative w-16 h-16 rounded-lg bg-[#0d1525] border border-[#263B6A] overflow-hidden flex-shrink-0 flex items-center justify-center">
+                  <div className="relative w-16 h-16 rounded-lg bg-page border border-border overflow-hidden flex-shrink-0 flex items-center justify-center">
                     {image ? (
                       <img src={image} alt={item.product?.name ?? "Product"} className="w-full h-full object-cover" />
                     ) : (
-                      <ProductIcon name={item.product?.name ?? "box"} className="w-6 h-6 text-[#A0D585]" />
+                      <ProductIcon name={item.product?.name ?? "box"} className="w-6 h-6 text-text-accent" />
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-white truncate">
+                    <h4 className="text-xs font-bold text-text truncate">
                       {item.product?.name ?? "Unavailable product"}
                     </h4>
                     {item.product?.sku && (
-                      <span className="font-mono text-[10px] text-[#6984A9] block mb-1">
+                      <span className="font-mono text-[10px] text-text-muted block mb-1">
                         {item.product.sku}
                       </span>
                     )}
-                    <span className="text-xs font-black text-[#A0D585]">
+                    <span className="text-xs font-black text-text-accent">
                       {item.product
                         ? formatMoney(item.product.priceMinorUnits, item.product.currency)
                         : "—"}
@@ -133,7 +133,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
                     <button
                       onClick={() => run(() => removeItem.mutateAsync(item.productId))}
-                      className="text-[#6984A9] hover:text-rose-400 transition-colors p-0.5 cursor-pointer"
+                      className="text-text-muted hover:text-danger transition-colors p-0.5 cursor-pointer"
                       title="Remove item"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,16 +141,16 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       </svg>
                     </button>
 
-                    <div className="flex items-center border border-[#263B6A] rounded-lg bg-[#0d1525] overflow-hidden">
+                    <div className="flex items-center border border-border rounded-lg bg-page overflow-hidden">
                       <button
                         onClick={() =>
                           run(() => updateQuantity.mutateAsync({ productId: item.productId, quantity: item.quantity - 1 }))
                         }
-                        className="px-2 py-0.5 text-xs text-[#6984A9] hover:text-white hover:bg-[#131e36] transition-colors cursor-pointer"
+                        className="px-2 py-0.5 text-xs text-text-muted hover:text-text hover:bg-sunken transition-colors cursor-pointer"
                       >
                         -
                       </button>
-                      <span className="px-2 text-xs font-bold text-white font-mono min-w-[20px] text-center">
+                      <span className="px-2 text-xs font-bold text-text font-mono min-w-[20px] text-center">
                         {item.quantity}
                       </span>
                       <button
@@ -158,7 +158,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                           run(() => updateQuantity.mutateAsync({ productId: item.productId, quantity: item.quantity + 1 }))
                         }
                         disabled={item.quantity >= max}
-                        className="px-2 py-0.5 text-xs text-[#6984A9] hover:text-white hover:bg-[#131e36] transition-colors cursor-pointer disabled:opacity-40"
+                        className="px-2 py-0.5 text-xs text-text-muted hover:text-text hover:bg-sunken transition-colors cursor-pointer disabled:opacity-40"
                       >
                         +
                       </button>
@@ -171,21 +171,21 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         </div>
 
         {items.length > 0 && (
-          <div className="p-4 sm:p-5 border-t border-[#263B6A] bg-[#0d1525] space-y-3">
+          <div className="p-4 sm:p-5 border-t border-border bg-page space-y-3">
             <div className="flex items-center justify-between text-sm font-bold">
-              <span className="text-white">Order total</span>
-              <span className="text-[#EEFABD] text-base font-black font-mono">
+              <span className="text-text">Order total</span>
+              <span className="text-text text-base font-black font-mono">
                 {formatMoney(totalMinorUnits, currency)}
               </span>
             </div>
-            <p className="text-[10px] text-[#6984A9]">
+            <p className="text-[10px] text-text-muted">
               Delivery is arranged separately and is not included in this total.
             </p>
 
             <Link
               href="/checkout"
               onClick={onClose}
-              className="flex items-center justify-center gap-1.5 w-full px-4 py-2.5 rounded-lg bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs transition-colors cursor-pointer shadow-lg"
+              className="flex items-center justify-center gap-1.5 w-full px-4 py-2.5 rounded-lg bg-accent hover:bg-border text-on-accent font-bold text-xs transition-colors cursor-pointer shadow-lg"
             >
               <span>Checkout</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

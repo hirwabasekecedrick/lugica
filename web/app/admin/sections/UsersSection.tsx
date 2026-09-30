@@ -40,7 +40,7 @@ export default function UsersSection() {
             setRoleFilter((e.target.value || "") as Role | "");
             setPage(1);
           }}
-          className="bg-[#131e36] border border-[#263B6A] text-[#EEFABD] text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:border-[#A0D585] cursor-pointer"
+          className="bg-surface border border-border text-text text-xs font-semibold rounded-lg px-3 py-2 outline-none focus:border-text-accent cursor-pointer"
         >
           <option value="">All roles</option>
           <option value="CLIENT">Clients</option>
@@ -51,7 +51,7 @@ export default function UsersSection() {
 
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] rounded-lg text-xs font-bold transition-colors cursor-pointer"
+          className="px-4 py-2 bg-accent hover:bg-border text-on-accent rounded-lg text-xs font-bold transition-colors cursor-pointer"
         >
           {showCreate ? "Close" : "New user"}
         </button>
@@ -74,10 +74,10 @@ export default function UsersSection() {
       ) : usersQuery.isError ? (
         <ErrorState error={usersQuery.error} onRetry={() => usersQuery.refetch()} />
       ) : (
-        <div className="overflow-x-auto bg-[#0d1525] border border-[#263B6A] rounded-xl">
+        <div className="overflow-x-auto bg-page border border-border rounded-xl">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#131e36]/70 border-b border-[#263B6A] text-[#6984A9] text-[11px] font-semibold uppercase">
+              <tr className="bg-surface/70 border-b border-border text-text-muted text-[11px] font-semibold uppercase">
                 <th className="py-3 px-4">Name</th>
                 <th className="py-3 px-4">Email</th>
                 <th className="py-3 px-4">Phone</th>
@@ -86,25 +86,25 @@ export default function UsersSection() {
                 <th className="py-3 px-4 text-right">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#263B6A]/50">
+            <tbody className="divide-y divide-border/50">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-[#131e36]/40 transition-colors">
-                  <td className="py-3 px-4 font-semibold text-white">
+                <tr key={u.id} className="hover:bg-sunken transition-colors">
+                  <td className="py-3 px-4 font-semibold text-text">
                     {u.name}
                     {u.licenseNumber && (
-                      <span className="block text-[10px] text-[#6984A9] font-mono">
+                      <span className="block text-[10px] text-text-muted font-mono">
                         {u.licenseNumber}
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-[#6984A9]">{u.email}</td>
-                  <td className="py-3 px-4 text-[#6984A9]">{u.phone ?? "—"}</td>
+                  <td className="py-3 px-4 text-text-muted">{u.email}</td>
+                  <td className="py-3 px-4 text-text-muted">{u.phone ?? "—"}</td>
                   <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#131e36] border border-[#263B6A] text-[#EEFABD]">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface border border-border text-text">
                       {roleLabel(u.role)}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-[#6984A9] whitespace-nowrap">
+                  <td className="py-3 px-4 text-text-muted whitespace-nowrap">
                     {formatDate(u.createdAt)}
                   </td>
                   <td className="py-3 px-4 text-right">
@@ -126,8 +126,8 @@ export default function UsersSection() {
                       disabled={updateUser.isPending}
                       className={`px-2.5 py-1 rounded text-[11px] font-semibold border cursor-pointer disabled:opacity-50 ${
                         u.isActive
-                          ? "bg-[#A0D585]/15 text-[#A0D585] border-[#A0D585]/30"
-                          : "bg-rose-500/15 text-rose-300 border-rose-400/30"
+                          ? "bg-accent/15 text-text-accent border-accent/30"
+                          : "bg-danger/15 text-danger border-danger/30"
                       }`}
                     >
                       {u.isActive ? "Active" : "Disabled"}
@@ -141,7 +141,7 @@ export default function UsersSection() {
       )}
 
       {meta && totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-[#6984A9]">
+        <div className="flex items-center justify-between text-xs text-text-muted">
           <span>
             Page {meta.page} of {totalPages} · {meta.total} users
           </span>
@@ -149,14 +149,14 @@ export default function UsersSection() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1.5 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] rounded disabled:opacity-40 cursor-pointer"
+              className="px-3 py-1.5 bg-surface hover:bg-sunken border border-border rounded disabled:opacity-40 cursor-pointer"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 bg-[#131e36] hover:bg-[#263B6A] border border-[#263B6A] rounded disabled:opacity-40 cursor-pointer"
+              className="px-3 py-1.5 bg-surface hover:bg-sunken border border-border rounded disabled:opacity-40 cursor-pointer"
             >
               Next
             </button>
@@ -224,14 +224,14 @@ function CreateUserForm({
   }
 
   const inputClass =
-    "w-full bg-[#131e36] border border-[#263B6A] rounded-lg px-3 py-2 text-xs text-white placeholder-[#6984A9] outline-none focus:border-[#A0D585]";
+    "w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text placeholder-text-muted outline-none focus:border-text-accent";
 
   return (
-    <form onSubmit={submit} className="bg-[#0d1525] border border-[#263B6A] rounded-xl p-5 space-y-3">
-      <h3 className="text-sm font-bold text-white">New user</h3>
+    <form onSubmit={submit} className="bg-page border border-border rounded-xl p-5 space-y-3">
+      <h3 className="text-sm font-bold text-text">New user</h3>
 
       {error && (
-        <p className="text-[11px] text-rose-300 border border-rose-400/30 bg-rose-500/10 rounded-lg px-3 py-2">
+        <p className="text-[11px] text-danger border border-danger/30 bg-danger/10 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
@@ -264,7 +264,7 @@ function CreateUserForm({
       <button
         type="submit"
         disabled={pending}
-        className="px-4 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+        className="px-4 py-2 bg-accent hover:bg-border text-on-accent rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
       >
         {pending ? "Creating…" : "Create user"}
       </button>

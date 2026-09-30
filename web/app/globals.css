@@ -1,22 +1,55 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Single light theme. Source palette (Color Hunt):
+ *   pale  #EEFABD   sage  #A0D585   slate #6984A9   navy  #263B6A
+ * Every value below is derived from those four hues, so a palette change is a
+ * one-file edit. Values are published as resolved hex rather than color-mix()
+ * expressions so Tailwind opacity modifiers (bg-page/60) resolve reliably.
+ */
+@theme {
+  /* surfaces — pale blended toward white */
+  --color-page: #f8fbea;         /* mix(pale 20%, white) — app background   */
+  --color-surface: #ffffff;      /* cards, panels, drawers                  */
+  --color-sunken: #f1f7de;       /* mix(pale 40%, white) — insets, tab rail */
+  --color-overlay: #263b6a;      /* navy scrim behind drawers (use at /40)  */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* lines */
+  --color-border: #cde7bc;       /* mix(sage 45%, white)                    */
+  --color-accent: #a0d585;       /* sage — fills, active tab                 */
+
+  /* text */
+  --color-text: #263b6a;         /* navy — 10.4:1 on page                   */
+  --color-text-muted: #556e96;   /* mix(slate 70%, navy) — 4.9:1           */
+  --color-text-accent: #577975;  /* mix(sage 40%, navy) — 4.5:1, bold only */
+  --color-on-accent: #263b6a;    /* navy on sage fill — 6.5:1              */
+
+  /* status */
+  --color-danger: #a92652;       /* mix(rose-600 70%, navy) — 6.5:1        */
+  --color-warning: #92660a;      /* darkened amber; green is the brand hue */
+  --color-on-status: #ffffff;    /* inverse text on dark/status fills       */
+
+  /* categorical chart ramp — palette hues, light-safe */
+  --color-chart-1: #a0d585;       /* sage                                   */
+  --color-chart-2: #cde7bc;       /* mix(sage 45%, white)                   */
+  --color-chart-3: #6984a9;       /* slate                                  */
+  --color-chart-4: #556e96;       /* mix(slate 70%, navy)                   */
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: var(--color-page);
+  --foreground: var(--color-text);
+
+  /* Soft in-palette shadows; Tailwind's defaults carry a black tint. */
+  --shadow-sm: 0 1px 2px 0 rgb(38 59 106 / 0.06);
+  --shadow: 0 1px 3px 0 rgb(38 59 106 / 0.08), 0 1px 2px -1px rgb(38 59 106 / 0.06);
+  --shadow-md: 0 4px 8px -2px rgb(38 59 106 / 0.08), 0 2px 4px -2px rgb(38 59 106 / 0.06);
+  --shadow-lg: 0 8px 16px -4px rgb(38 59 106 / 0.1), 0 4px 8px -4px rgb(38 59 106 / 0.06);
+  --shadow-xl: 0 12px 24px -6px rgb(38 59 106 / 0.12), 0 6px 12px -6px rgb(38 59 106 / 0.07);
+  --shadow-2xl: 0 20px 40px -8px rgb(38 59 106 / 0.16);
 }
 
 body {
@@ -29,7 +62,7 @@ body {
 /* ── Custom scrollbars for inventory dashboard ─────────────── */
 .inventory-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #263B6A transparent;
+  scrollbar-color: var(--color-accent) transparent;
 }
 
 .inventory-scroll::-webkit-scrollbar {
@@ -42,12 +75,12 @@ body {
 }
 
 .inventory-scroll::-webkit-scrollbar-thumb {
-  background-color: #263B6A;
+  background-color: var(--color-accent);
   border-radius: 999px;
 }
 
 .inventory-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #6984A9;
+  background-color: var(--color-text-muted);
 }
 
 .inventory-scroll::-webkit-scrollbar-corner {

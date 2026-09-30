@@ -88,16 +88,16 @@ export default function InventorySidebar({
   const navItemClass = (active: boolean) =>
     `w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer text-left ${
       active
-        ? "bg-[#263B6A] text-[#EEFABD]"
-        : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
+        ? "bg-accent text-text"
+        : "text-text-muted hover:bg-sunken hover:text-text"
     }`;
 
   /** Same treatment as navItemClass, for real <Link> destinations. */
   const subLinkClass = (active: boolean) =>
     `flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
       active
-        ? "bg-[#263B6A] text-[#EEFABD]"
-        : "text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD]"
+        ? "bg-accent text-text"
+        : "text-text-muted hover:bg-sunken hover:text-text"
     }`;
 
   const adminLinks = [
@@ -117,7 +117,7 @@ export default function InventorySidebar({
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-lg text-[#6984A9] hover:text-white hover:bg-[#131e36] transition-colors"
+              className="lg:hidden p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-sunken transition-colors"
               title="Close menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,14 +130,14 @@ export default function InventorySidebar({
         {/* Identity + role indicator. Read-only: role now comes from the JWT. */}
         {session && (
           <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
-            <div className="w-6 h-6 rounded bg-[#263B6A] flex items-center justify-center text-[11px] font-bold text-[#A0D585] flex-shrink-0">
+            <div className="w-6 h-6 rounded bg-accent flex items-center justify-center text-[11px] font-bold text-on-accent flex-shrink-0">
               {session.initials.charAt(0)}
             </div>
             <div className="truncate">
-              <span className="text-[#EEFABD] text-xs font-semibold block leading-tight truncate">
+              <span className="text-text text-xs font-semibold block leading-tight truncate">
                 {session.displayName}
               </span>
-              <span className="text-[10px] text-[#A0D585] font-mono capitalize">
+              <span className="text-[10px] text-text-accent font-mono capitalize">
                 {roleLabel(session.role)}
               </span>
             </div>
@@ -149,7 +149,7 @@ export default function InventorySidebar({
       <div className="px-4 py-3 relative">
         <button
           onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 bg-[#A0D585] hover:bg-[#EEFABD] text-[#0d1525] font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-sm active:scale-[0.98]"
+          className="w-full flex items-center justify-between px-3 py-2 bg-accent hover:bg-border text-on-accent font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-sm active:scale-[0.98]"
         >
           <div className="flex items-center gap-2">
             <CreateIcon className="w-4 h-4" />
@@ -159,16 +159,16 @@ export default function InventorySidebar({
         </button>
 
         {createDropdownOpen && (
-          <div className="absolute left-4 right-4 top-full mt-1 bg-[#131e36] border border-[#263B6A] rounded-xl p-1 shadow-2xl z-50 animate-fadeIn">
+          <div className="absolute left-4 right-4 top-full mt-1 bg-surface border border-border rounded-xl p-1 shadow-2xl z-50 animate-fadeIn">
             <button
               onClick={() => {
                 setCreateDropdownOpen(false);
                 handleTabClick("catalog");
                 if (onOpenAddProduct) onOpenAddProduct();
               }}
-              className="w-full text-left px-3 py-2 hover:bg-[#263B6A]/40 rounded-lg text-xs font-semibold text-white flex items-center gap-2 cursor-pointer"
+              className="w-full text-left px-3 py-2 hover:bg-sunken rounded-lg text-xs font-semibold text-text flex items-center gap-2 cursor-pointer"
             >
-              <svg className="w-4 h-4 text-[#A0D585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
               <span>Add New Product</span>
@@ -179,9 +179,9 @@ export default function InventorySidebar({
                 handleTabClick("procurement");
                 if (onOpenProcure) onOpenProcure();
               }}
-              className="w-full text-left px-3 py-2 hover:bg-[#263B6A]/40 rounded-lg text-xs font-semibold text-[#A0D585] flex items-center gap-2 cursor-pointer"
+              className="w-full text-left px-3 py-2 hover:bg-sunken rounded-lg text-xs font-semibold text-text-accent flex items-center gap-2 cursor-pointer"
             >
-              <svg className="w-4 h-4 text-[#A0D585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               <span>Procure Stock Batch</span>
@@ -194,7 +194,7 @@ export default function InventorySidebar({
       <nav className="flex-1 overflow-y-auto px-3 space-y-4 pb-4 inventory-scroll">
         {/* Core Management */}
         <div>
-          <p className="text-[#6984A9]/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
+          <p className="text-text-muted/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
             MANAGEMENT
           </p>
           <ul className="space-y-0.5">
@@ -214,7 +214,7 @@ export default function InventorySidebar({
                   <span>Inventory Catalog</span>
                 </div>
                 {lowStockCount > 0 && (
-                  <span className="text-[10px] font-bold bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded-full">
+                  <span className="text-[10px] font-bold bg-warning/20 text-warning px-1.5 py-0.2 rounded-full">
                     {lowStockCount}
                   </span>
                 )}
@@ -229,7 +229,7 @@ export default function InventorySidebar({
                   <ProcurementIcon className="w-4 h-4 flex-shrink-0" />
                   <span>Procurement</span>
                 </div>
-                <span className="text-[10px] font-bold bg-[#A0D585]/20 text-[#A0D585] px-1.5 py-0.2 rounded-full">
+                <span className="text-[10px] font-bold bg-accent/20 text-text-accent px-1.5 py-0.2 rounded-full">
                   {receiptCount}
                 </span>
               </button>
@@ -239,7 +239,7 @@ export default function InventorySidebar({
 
         {/* Channels */}
         <div>
-          <p className="text-[#6984A9]/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
+          <p className="text-text-muted/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
             SALES CHANNELS
           </p>
           <ul className="space-y-0.5">
@@ -247,13 +247,13 @@ export default function InventorySidebar({
               <Link
                 href="/shop"
                 onClick={onCloseMobile}
-                className="flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD] transition-colors group"
+                className="flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold text-text-muted hover:bg-sunken hover:text-text transition-colors group"
               >
                 <div className="flex items-center gap-2.5">
-                  <StorefrontIcon className="w-4 h-4 flex-shrink-0 group-hover:text-[#A0D585]" />
+                  <StorefrontIcon className="w-4 h-4 flex-shrink-0 group-hover:text-text-accent" />
                   <span>Client Store</span>
                 </div>
-                <span className="text-[9px] font-bold bg-[#A0D585]/20 text-[#A0D585] border border-[#A0D585]/30 px-1.5 py-0.5 rounded">
+                <span className="text-[9px] font-bold bg-accent/20 text-text-accent border border-accent/30 px-1.5 py-0.5 rounded">
                   VIEW
                 </span>
               </Link>
@@ -262,7 +262,7 @@ export default function InventorySidebar({
               <Link
                 href="/checkout"
                 onClick={onCloseMobile}
-                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-[#6984A9] hover:bg-[#263B6A]/40 hover:text-[#EEFABD] transition-colors"
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-text-muted hover:bg-sunken hover:text-text transition-colors"
               >
                 <CheckoutIcon className="w-4 h-4 flex-shrink-0" />
                 <span>Checkout Flow</span>
@@ -284,7 +284,7 @@ export default function InventorySidebar({
         {/* Administration — ADMIN only, so the API never rejects these links */}
         {isAdmin && (
           <div>
-            <p className="text-[#6984A9]/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
+            <p className="text-text-muted/60 text-[10px] font-semibold uppercase tracking-widest px-2 mb-1">
               ADMINISTRATION
             </p>
             <ul className="space-y-0.5">
@@ -300,7 +300,7 @@ export default function InventorySidebar({
                       <span>{link.label}</span>
                     </div>
                     {!!link.badge && (
-                      <span className="text-[10px] font-bold bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded-full">
+                      <span className="text-[10px] font-bold bg-warning/20 text-warning px-1.5 py-0.2 rounded-full">
                         {link.badge}
                       </span>
                     )}
@@ -313,27 +313,27 @@ export default function InventorySidebar({
       </nav>
 
       {/* Warehouse Status banner */}
-      <div className="px-4 py-2 bg-[#131e36]/60 border-t border-[#263B6A]/50">
+      <div className="px-4 py-2 bg-surface/60 border-t border-border/50">
         <div className="flex items-center justify-between text-[11px]">
-          <span className="text-[#6984A9]">Hub Status:</span>
-          <span className="text-[#A0D585] font-semibold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#A0D585] animate-pulse" />
+          <span className="text-text-muted">Hub Status:</span>
+          <span className="text-text-accent font-semibold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             Operational
           </span>
         </div>
       </div>
 
       {/* Bottom user row */}
-      <div className="border-t border-[#263B6A] px-4 py-3 flex items-center justify-between">
+      <div className="border-t border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#263B6A] to-[#6984A9] flex items-center justify-center text-[11px] font-bold text-[#EEFABD] flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-text to-text-muted flex items-center justify-center text-[11px] font-bold text-on-status flex-shrink-0">
             {session?.initials ?? "--"}
           </div>
           <div className="truncate">
-            <span className="text-[#c0c1d4] text-xs font-medium block truncate max-w-[90px]">
+            <span className="text-text-muted text-xs font-medium block truncate max-w-[90px]">
               {session?.displayName ?? "Signed out"}
             </span>
-            <span className="text-[10px] text-[#6984A9] block truncate max-w-[90px]">
+            <span className="text-[10px] text-text-muted block truncate max-w-[90px]">
               {session?.email ?? ""}
             </span>
           </div>
@@ -343,7 +343,7 @@ export default function InventorySidebar({
           disabled={logout.isPending}
           title="Sign out"
           aria-label="Sign out"
-          className="text-[#6984A9] hover:text-[#EEFABD] transition-colors p-1 cursor-pointer disabled:opacity-50"
+          className="text-text-muted hover:text-text transition-colors p-1 cursor-pointer disabled:opacity-50"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -356,7 +356,7 @@ export default function InventorySidebar({
   return (
     <>
       {/* Desktop Fixed Sidebar */}
-      <aside className="hidden lg:flex w-[210px] min-w-[210px] h-screen bg-[#0d1525] border-r border-[#263B6A] flex-col overflow-hidden select-none flex-shrink-0">
+      <aside className="hidden lg:flex w-[210px] min-w-[210px] h-screen bg-page border-r border-border flex-col overflow-hidden select-none flex-shrink-0">
         {sidebarContent}
       </aside>
 
@@ -366,11 +366,11 @@ export default function InventorySidebar({
           {/* Backdrop */}
           <div
             onClick={onCloseMobile}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity animate-fadeIn"
+            className="fixed inset-0 bg-overlay/40 backdrop-blur-sm transition-opacity animate-fadeIn"
           />
 
           {/* Drawer Panel */}
-          <div className="fixed inset-y-0 left-0 w-[260px] max-w-[85vw] bg-[#0d1525] border-r border-[#263B6A] shadow-2xl flex flex-col z-10 animate-slideRight">
+          <div className="fixed inset-y-0 left-0 w-[260px] max-w-[85vw] bg-page border-r border-border shadow-2xl flex flex-col z-10 animate-slideRight">
             {sidebarContent}
           </div>
         </div>
