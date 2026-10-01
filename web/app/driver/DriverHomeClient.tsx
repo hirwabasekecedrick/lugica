@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { AppFrame } from "@/app/components/AppFrame";
+import { DeliveryIcon } from "@/app/components/sidebar-icons";
 import { LoadingState, ErrorState, EmptyState } from "@/app/components/ui-states";
 import LiveDriverMap from "@/app/components/tracking/LiveDriverMap";
 import type { MapMarker } from "@/app/components/tracking/markers";
@@ -83,10 +84,12 @@ export default function DriverHomeClient() {
     <AppFrame
       title="My Deliveries"
       subtitle="Assigned jobs, the journey in progress, and your history"
-      activeHref="/driver"
-      sidebarItems={[
-        { href: "/driver", label: "My Deliveries", badge: assigned.length },
-        { href: "/shop", label: "Store" },
+      sidebarGroups={[
+        {
+          items: [
+            { key: "deliveries", label: "My Deliveries", href: "/driver", icon: DeliveryIcon, badge: assigned.length },
+          ],
+        },
       ]}
       actions={
         <button
