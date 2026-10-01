@@ -71,7 +71,8 @@ export default function LoginCard() {
     if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
       return nextPath;
     }
-    return role === "ADMIN" ? "/inventory" : "/shop";
+    if (role === "DRIVER") return "/driver";
+    return role === "ADMIN" || role === "SHOP_MANAGER" ? "/inventory" : "/shop";
   }
 
   function handleSignIn(e: React.FormEvent) {

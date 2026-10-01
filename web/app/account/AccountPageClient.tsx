@@ -200,17 +200,27 @@ export default function AccountPageClient() {
                         {formatMoney(order.totalMinorUnits, order.currency)}
                       </td>
                       <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
-                            order.status === "EXPIRED" || order.status === "CANCELLED"
-                              ? "bg-danger/15 text-danger border-danger/30"
-                              : order.status === "PENDING_PAYMENT"
-                                ? "bg-warning/15 text-warning border-warning/30"
-                                : "bg-accent/15 text-text-accent border-accent/30"
-                          }`}
-                        >
-                          {orderStatusLabel(order.status)}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                              order.status === "EXPIRED" || order.status === "CANCELLED"
+                                ? "bg-danger/15 text-danger border-danger/30"
+                                : order.status === "PENDING_PAYMENT"
+                                  ? "bg-warning/15 text-warning border-warning/30"
+                                  : "bg-accent/15 text-text-accent border-accent/30"
+                            }`}
+                          >
+                            {orderStatusLabel(order.status)}
+                          </span>
+                          {order.deliveryId && (
+                            <Link 
+                              href={`/account/track/${order.deliveryId}`}
+                              className="px-3 py-1 bg-surface hover:bg-border border border-border text-text rounded-full text-[10px] font-bold transition-colors shadow-sm"
+                            >
+                              Track Delivery
+                            </Link>
+                          )}
+                        </div>
                         {order.status === "PENDING_PAYMENT" && (
                           <span className="block text-[10px] text-text-muted mt-1">
                             {formatCountdown(order.expiresAt)}

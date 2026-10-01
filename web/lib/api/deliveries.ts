@@ -36,4 +36,13 @@ export const deliveries = {
    */
   assign: (id: string, input: { driverId: string; vehicleId: string }) =>
     api.patch<Delivery>(`/deliveries/${id}/assign`, input),
+
+  pickup: (id: string, notes?: string) =>
+    api.patch<Delivery>(`/deliveries/${id}/pickup`, { notes }),
+
+  transit: (id: string, notes?: string) =>
+    api.patch<Delivery>(`/deliveries/${id}/transit`, { notes }),
+
+  deliver: (id: string, notes?: string) =>
+    api.patch<Delivery>(`/deliveries/${id}/deliver`, { notes }),
 };
