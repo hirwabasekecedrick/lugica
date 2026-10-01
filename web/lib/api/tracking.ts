@@ -1,5 +1,11 @@
 import { api } from "./client";
-import type { DriverLiveState, LocationPingInput, MyTrackingState, TrailPoint } from "./types";
+import type {
+  DeliverySummary,
+  DriverLiveState,
+  LocationPingInput,
+  MyTrackingState,
+  TrailPoint,
+} from "./types";
 
 /**
  * Live tracking.
@@ -29,10 +35,35 @@ export const tracking = {
 
   /**
    * Role-aware: admin sees any delivery, driver and client only their own.
-   * Returns the full recorded trail, including points from closed deliveries.
+   *
+   * Returns the recorded trail in chronological order, including points from
+   * closed deliveries.
+   *
+   * At the 3s transmission interval one trip passes 1000 points quickly, so
+   * `maxPoints` uniformly samples the trail down (default 500). Sampling is a
+   * stride across the whole range, not a truncation, so the path keeps its shape.
    */
-  trail: (deliveryId: string) =>
-    api.get<TrailPoint[]>(`/tracking/deliveries/${deliveryId}/trail`),
+  trail: (deliveryId: string, options: { maxPoints?: number; since?: string } = {}) => {
+    const params = new URLSearchParams();
+    if (options.maxPoints !== undefined) {
+      params.set("maxPoints", String(options.maxPoints));
+    }
+    if (options.since) params.set("since", options.since);
+
+    const query = params.toString();
+    return api.get<TrailPoint[]>(
+      `/tracking/deliveries/${deliveryId}/trail${query ? `?${query}` : ""}`,
+    );
+  },
+
+  /**
+   * Distance travelled and elapsed travel time for a delivery.
+   *
+   * Same role rules as the trail. Preferred over client-side summing so the
+   * driver, admin and client views cannot disagree.
+   */
+  summary: (deliveryId: string) =>
+    api.get<DeliverySummary>(`/tracking/deliveries/${deliveryId}/summary`),
 
   /** DRIVER only. Rate limited to 5 requests/second by the API's @Throttle. */
   ping: (input: LocationPingInput) => api.post<LocationPingResult>("/locations/ping", input),

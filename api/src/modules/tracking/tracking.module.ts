@@ -6,11 +6,13 @@ import { TrackingGateway } from './tracking.gateway.js';
 import { TrackingService } from './tracking.service.js';
 import { TrackingController } from './tracking.controller.js';
 import { LocationsModule } from '../locations/locations.module.js';
+import { DriverStateModule } from './driver-state.module.js';
 import { DeliveriesModule } from '../deliveries/deliveries.module.js';
 
 @Module({
   imports: [
     LocationsModule,
+    DriverStateModule,
     forwardRef(() => DeliveriesModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],

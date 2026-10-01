@@ -31,6 +31,12 @@ async function loginAs(email) {
     redirect: "manual",
   });
   c.absorb(res);
+  // Fail loudly here. Silently returning an empty jar turns every later check
+  // into an anonymous request, so one bad login reports as a page-gate
+  // regression (all 307 -> /login) instead of the login problem it is.
+  if (!res.ok) {
+    throw new Error(`login ${email} failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  }
   return c;
 }
 
@@ -59,7 +65,7 @@ function check(name, ok, detail = "") {
     );
   }
 
-  const driver = await loginAs("driver1@gmail.com");
+  const driver = await loginAs("driver1@lugica.com");
   const admin = await loginAs("admin@lugica.com");
   const client = await loginAs("client1@lugica.com");
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,6 +10,7 @@ import {
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { TrackingService } from './tracking.service.js';
+import { TrailQueryDto } from './dto/trail-query.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -99,8 +100,9 @@ export class TrackingController {
   @ApiOperation({
     summary: 'Get GPS trail for a delivery (role-aware)',
     description:
-      'Returns all GPS location points recorded during this delivery, ordered chronologically. ' +
-      'Admin: any delivery. Driver: only their assigned deliveries. Client: only their own deliveries.',
+      'Returns GPS points recorded during this delivery, ordered chronologically. ' +
+      'Admin: any delivery. Driver: only their assigned deliveries. Client: only their own. ' +
+      'Uniformly samples down to `maxPoints`, since a trip recorded at a 3s interval exceeds 1000 points quickly.',
   })
   @ApiOkResponse({
     description: 'Array of GPS trail points',
@@ -113,6 +115,7 @@ export class TrackingController {
           longitude: { type: 'number' },
           accuracy: { type: 'number', nullable: true },
           recordedAt: { type: 'string', format: 'date-time' },
+          cumulativeDistanceMeters: { type: 'number' },
         },
       },
     },
@@ -127,11 +130,50 @@ export class TrackingController {
   async getDeliveryTrail(
     @Param('deliveryId') deliveryId: string,
     @CurrentUser() currentUser: JwtPayload,
+    @Query() query: TrailQueryDto,
   ) {
-    return this.trackingService.getDeliveryTrailForUser(
-      deliveryId,
-      currentUser,
-    );
+    return this.trackingService.getDeliveryTrailForUser(deliveryId, currentUser, {
+      ...(query.maxPoints !== undefined ? { maxPoints: query.maxPoints } : {}),
+      ...(query.since ? { since: new Date(query.since) } : {}),
+    });
+  }
+
+  @Get('deliveries/:deliveryId/summary')
+  @ApiOperation({
+    summary: 'Distance travelled and elapsed travel time for a delivery',
+    description:
+      'Returns the distance covered in metres/kilometres and the elapsed travel ' +
+      'time. Elapsed is measured from the PICKED_UP transition to the first terminal ' +
+      'status, and keeps counting while a trip is still in progress. ' +
+      'Admin: any delivery. Driver: only their assigned deliveries. Client: only their own.',
+  })
+  @ApiOkResponse({
+    description: 'Trip distance and elapsed time',
+    schema: {
+      type: 'object',
+      properties: {
+        deliveryId: { type: 'string' },
+        status: { type: 'string' },
+        distanceMeters: { type: 'number' },
+        distanceKilometers: { type: 'number' },
+        pickedUpAt: { type: 'string', format: 'date-time', nullable: true },
+        terminalAt: { type: 'string', format: 'date-time', nullable: true },
+        elapsedSeconds: { type: 'number' },
+        isTerminal: { type: 'boolean' },
+        pointCount: { type: 'number' },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing access token',
+  })
+  @ApiForbiddenResponse({ description: 'Access denied to this delivery' })
+  @ApiNotFoundResponse({ description: 'Delivery not found' })
+  async getDeliverySummary(
+    @Param('deliveryId') deliveryId: string,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.trackingService.getDeliverySummary(deliveryId, currentUser);
   }
 
   @Get('me')

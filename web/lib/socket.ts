@@ -1,5 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import { tracking } from "@/lib/api/tracking";
+import type { DriverLivePosition } from "@/lib/api/types";
 
 /**
  * Socket.IO client for the tracking gateway.
@@ -34,6 +35,14 @@ export type TrackingSocketHandlers = {
     driverId: string | null;
     clientId: string;
   }) => void;
+  /**
+   * The assigned driver or the owning client's position, pushed whenever the
+   * driver's position changes.
+   *
+   * Delivered to a socket that joined the delivery's room via `delivery:watch`.
+   * The gateway authorises that join, so receipt implies permission.
+   */
+  onDeliveryLocation?: (position: DriverLivePosition) => void;
   onConnectionChange?: (status: SocketStatus) => void;
   /**
    * Errors the gateway reports to this socket.
@@ -98,6 +107,10 @@ export async function connectTrackingSocket(
 
   if (handlers.onStatusChange) {
     socket.on("deliveryStatusChanged", handlers.onStatusChange);
+  }
+
+  if (handlers.onDeliveryLocation) {
+    socket.on("deliveryLocationUpdate", handlers.onDeliveryLocation);
   }
 
   if (handlers.onError) {

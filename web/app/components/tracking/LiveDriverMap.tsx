@@ -28,6 +28,10 @@ type Props = {
   markers: MapMarker[];
   trail?: TrailPoint[];
   focusId?: string | null;
+  pickup?: [number, number] | null;
+  pickupLabel?: string | null;
+  dropoff?: [number, number] | null;
+  dropoffLabel?: string | null;
   className?: string;
   emptyMessage?: string;
 };

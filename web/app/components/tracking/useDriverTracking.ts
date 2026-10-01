@@ -13,23 +13,42 @@ import type { Socket } from "socket.io-client";
  * delivery), and `tracking:stop`.
  *
  * Two independent mechanisms write positions, but they are NOT equivalent:
- *  - the socket path (`tracking:start` then `locationUpdate`) is the only one
- *    that publishes the driver to the admin live map. It writes
- *    `tracking:driver:{id}` and adds the id to `tracking:active_drivers`
- *    (tracking.service.ts:97, :140), which is what `GET /tracking/drivers` reads.
- *  - `POST /locations/ping` writes only `driver:location:{id}` plus a Postgres
- *    DriverLocation row (locations.service.ts:29-41). It therefore keeps the
- *    trail readable but never makes the driver appear live.
+ *  - the socket path (`tracking:start` then `locationUpdate`) publishes the
+ *    driver to the admin live map and to anyone watching their delivery, and
+ *    pushes `deliveryLocationUpdate` to that delivery's room.
+ *  - `POST /locations/ping` is the fallback used when the socket is unavailable.
+ *    Since API-GAPS.md #21 was fixed it writes the *same* live-state keys the
+ *    socket does, so a driver who only pings is now visible on the admin map too;
+ *    what it cannot do is push to subscribers, because there is no socket to
+ *    push from.
  *
  * The REST fallback is kept because a lost websocket should not lose the trip
- * record — but the admin map depends on the socket, which is called out in
- * docs/API-GAPS.md.
+ * record, and because `ping` is the only transport available to a client that
+ * cannot hold a socket open at all.
  */
 
-/** The API throttles pings to 5/s; 10s is well inside that and battery-friendly. */
-const PING_INTERVAL_MS = 10_000;
+/**
+ * Transmission interval for driver positions.
+ *
+ * 3s is the dispatch requirement. Both rate limits tolerate it comfortably:
+ * `POST /locations/ping` allows 5 req/s (locations.controller.ts) and the global
+ * limiter allows 100 req/60s, so a driver at 3s uses 20 of the 100 per minute.
+ *
+ * `maximumAge` on the watch is kept below the publish interval so each tick
+ * tends to carry a genuinely fresh fix. A 5s cache would return a position up to
+ * one full cycle old, making the interval effectively 6s on a slow device.
+ */
+const PING_INTERVAL_MS = 3_000;
 
-export type GeolocationState = "idle" | "watching" | "denied" | "unavailable";
+/** Maximum staleness the browser will serve from its own position cache. */
+const GEOLOCATION_MAX_AGE_MS = 2_000;
+
+export type GeolocationState =
+  | "idle"
+  | "watching"
+  | "paused"
+  | "denied"
+  | "unavailable";
 
 export type DriverTracking = {
   /** Transport state of the socket, for the status chip. */
@@ -41,12 +60,21 @@ export type DriverTracking = {
   /**
    * Last error the gateway reported on this socket.
    *
-   * Currently populated by the known API bug where the global ThrottlerGuard
-   * throws on WebSocket handlers (docs/API-GAPS.md #23), which makes
-   * `tracking:start` fail. Exposed so the UI can say so instead of pretending
-   * the driver went online when the server never registered them.
+   * Populated from the gateway's `error` event. `WsExceptionFilter` converts a
+   * thrown error into an `error` event and swallows the exception, so a handler
+   * that fails server-side is otherwise silent on the client.
    */
   lastError: string | null;
+  /**
+   * True when the browser has suspended the page (backgrounded tab, locked
+   * screen).
+   *
+   * Browsers throttle and then stop `watchPosition` in this state, so no position
+   * is being transmitted even though the driver is "online". At a 3s interval
+   * that gap is plainly visible on the admin map, so the UI states it instead of
+   * showing a healthy-looking live chip while recording nothing.
+   */
+  visible: boolean;
   goOnline: () => void;
   goOffline: () => void;
   /** Publish one fix now, outside the interval. */
@@ -56,6 +84,17 @@ export type DriverTracking = {
   ) => void;
   /** The delivery the driver is currently on, attached to subsequent pings. */
   setActiveDelivery: (deliveryId: string | null) => void;
+  /**
+   * Most recent position the driver transmitted, or null before the first ping.
+   *
+   * Lets a delivery page draw the driver's own marker without a second request,
+   * and keeps the marker moving between server round trips.
+   */
+  lastKnownPosition: {
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+  } | null;
 };
 
 export function useDriverTracking(): DriverTracking {
@@ -64,6 +103,8 @@ export function useDriverTracking(): DriverTracking {
   const [lastSentAt, setLastSentAt] = useState<number | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [lastKnownPosition, setLastKnownPosition] = useState<DriverTracking["lastKnownPosition"]>(null);
 
   /** Browser capability is a stable property, so it is read during render. */
   const geolocationSupported =
@@ -116,6 +157,14 @@ export function useDriverTracking(): DriverTracking {
     (coords, deliveryId) => {
       const socket = socketRef.current;
 
+      // Recorded before the transport is chosen, so the driver's own map moves
+      // whether or not the socket is currently usable.
+      setLastKnownPosition({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy ?? null,
+      });
+
       if (socket?.connected) {
         // socket.io queues emits made before the handshake completes, so this is
         // safe even while `connecting`.
@@ -124,8 +173,9 @@ export function useDriverTracking(): DriverTracking {
         return;
       }
 
-      // Socket down: the Postgres trail still survives. Note this does NOT make
-      // the driver visible on the admin live map — see the file header.
+      // Socket down: the trail still survives, and since #21 the live state is
+      // written too — but no subscriber is pushed, so watchers see nothing
+      // until this client reconnects.
       pingRef.current
         .mutateAsync({
           latitude: coords.latitude,
@@ -161,11 +211,29 @@ export function useDriverTracking(): DriverTracking {
   );
 
   /**
+   * Track page visibility so the UI can report that transmission has stopped.
+   *
+   * `document.visibilityState` is read on the event rather than polled, and the
+   * initial value comes from state so the first render is already correct.
+   */
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const onChange = () => setVisible(document.visibilityState === "visible");
+    onChange();
+
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
+
+  /**
    * Watch the device GPS while online and publish on a fixed interval.
    *
    * `watchPosition` fires far more often than the API wants, so the newest fix
    * is parked in a local variable and drained by an interval rather than sent
-   * per event.
+   * per event. Parking rather than throttling-by-time also means a tick is never
+   * skipped: if the watch fired at 0.1s and again at 2.9s, the 3s tick publishes
+   * the 2.9s fix.
    */
   useEffect(() => {
     // Nothing to watch while offline. `geolocation` is derived below rather than
@@ -179,7 +247,11 @@ export function useDriverTracking(): DriverTracking {
         latest = position;
       },
       () => setPermissionDenied(true),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20_000 },
+      {
+        enableHighAccuracy: true,
+        maximumAge: GEOLOCATION_MAX_AGE_MS,
+        timeout: 20_000,
+      },
     );
 
     const timer = setInterval(() => {
@@ -202,8 +274,8 @@ export function useDriverTracking(): DriverTracking {
   }, [online, geolocationSupported, publishPosition]);
 
   /**
-   * Derived rather than stored: the effect above only ever reports the
-   * permission result, and the "idle" / "unavailable" cases follow from
+   * Derived rather than stored: the effects above only report the permission
+   * result and page visibility, and the "idle" / "unavailable" cases follow from
    * `online` and browser capability.
    */
   const geolocation: GeolocationState = !online
@@ -212,7 +284,9 @@ export function useDriverTracking(): DriverTracking {
       ? "unavailable"
       : permissionDenied
         ? "denied"
-        : "watching";
+        : !visible
+          ? "paused"
+          : "watching";
 
   return {
     status,
@@ -220,9 +294,11 @@ export function useDriverTracking(): DriverTracking {
     geolocation,
     lastSentAt,
     lastError,
+    visible,
     goOnline,
     goOffline,
     publishPosition,
     setActiveDelivery,
+    lastKnownPosition,
   };
 }

@@ -60,7 +60,9 @@ export const qk = {
   users: (page?: number, role?: Role) => ["users", page ?? 1, role ?? null] as const,
   activeDrivers: () => ["tracking", "drivers"] as const,
   myTracking: () => ["tracking", "me"] as const,
-  trail: (deliveryId: string | null) => ["tracking", "trail", deliveryId ?? ""] as const,
+  trail: (deliveryId: string | null, maxPoints?: number) =>
+    ["tracking", "trail", deliveryId ?? "", maxPoints ?? null] as const,
+  summary: (deliveryId: string | null) => ["tracking", "summary", deliveryId ?? ""] as const,
 } as const;
 
 /* ── Catalog (public) ─────────────────────────────────────────────────────── */
@@ -142,8 +144,18 @@ export function useGoodsReceipts(): UseQueryResult<GoodsReceipt[]> {
 
 /* ── Admin ────────────────────────────────────────────────────────────────── */
 
-export function useDeliveries(): UseQueryResult<Delivery[]> {
-  return useQuery({ queryKey: qk.deliveries(), queryFn: deliveries.list });
+/**
+ * All deliveries, role-filtered by the API.
+ *
+ * `enabled` exists so the admin live-tracking map only fetches when a driver is
+ * actually carrying something, instead of on every render of that view.
+ */
+export function useDeliveries(options?: { enabled?: boolean }): UseQueryResult<Delivery[]> {
+  return useQuery({
+    queryKey: qk.deliveries(),
+    queryFn: deliveries.list,
+    enabled: options?.enabled ?? true,
+  });
 }
 
 export function useDelivery(id: string | null) {
@@ -191,12 +203,35 @@ export function useMyTrackingState(options?: { enabled?: boolean }) {
   });
 }
 
-/** The recorded GPS trail for a delivery, chronological. */
-export function useDeliveryTrail(deliveryId: string | null) {
+/**
+ * The recorded GPS trail for a delivery, chronological.
+ *
+ * Fetched once per delivery and then extended from pushed positions, so it does
+ * not poll: at the driver's 3s transmission interval a polling consumer would
+ * always be showing a stale breadcrumb and would re-download the whole path.
+ * `maxPoints` asks the API to sample the trail down for drawing.
+ */
+export function useDeliveryTrail(deliveryId: string | null, options?: { maxPoints?: number }) {
   return useQuery({
-    queryKey: qk.trail(deliveryId),
-    queryFn: () => tracking.trail(deliveryId as string),
+    queryKey: qk.trail(deliveryId, options?.maxPoints),
+    queryFn: () => tracking.trail(deliveryId as string, options?.maxPoints !== undefined ? { maxPoints: options.maxPoints } : {}),
     enabled: Boolean(deliveryId),
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Distance travelled and elapsed travel time, from the API.
+ *
+ * Polls slowly because the in-flight figures change with every ping; the pushed
+ * position updates the marker far more often than this updates the totals.
+ */
+export function useDeliverySummary(deliveryId: string | null, options?: { refetchInterval?: number }) {
+  return useQuery({
+    queryKey: qk.summary(deliveryId),
+    queryFn: () => tracking.summary(deliveryId as string),
+    enabled: Boolean(deliveryId),
+    refetchInterval: options?.refetchInterval ?? 15_000,
   });
 }
 

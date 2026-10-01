@@ -8,11 +8,15 @@ import { DeliveryStatus, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateDeliveryDto } from './dto/create-delivery.dto.js';
 import { AssignDeliveryDto } from './dto/assign-delivery.dto.js';
+import { LocationsService } from '../locations/locations.service.js';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface.js';
 
 @Injectable()
 export class DeliveriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly locationsService: LocationsService,
+  ) {}
 
   async create(dto: CreateDeliveryDto, currentUser: JwtPayload) {
     return this.prisma.delivery.create({
@@ -263,7 +267,7 @@ export class DeliveriesService {
       currentUser,
     );
 
-    return this.prisma.$transaction(async (tx) => {
+    const updatedDelivery = await this.prisma.$transaction(async (tx) => {
       const updatedDelivery = await tx.delivery.update({
         where: { id: deliveryId },
         data: {
@@ -297,6 +301,33 @@ export class DeliveriesService {
 
       return updatedDelivery;
     });
+
+    // Flush the exact accumulated distance once the trip is over.
+    //
+    // While a trip is running, `distance_meters` is refreshed on a slower cadence
+    // than positions arrive (see LocationsService.persistDeliveryDistance), so it
+    // can trail the live Redis total by up to that interval. On a terminal
+    // transition the trip's final figure is known and is written exactly.
+    //
+    // Done after the transaction rather than inside it: the accumulator lives in
+    // Redis, and holding a Postgres transaction open across a network hop to a
+    // second store would lock the row for the duration of the call.
+    const isTerminal =
+      toStatus === DeliveryStatus.DELIVERED ||
+      toStatus === DeliveryStatus.FAILED ||
+      toStatus === DeliveryStatus.CANCELLED;
+
+    if (isTerminal) {
+      try {
+        await this.locationsService.finaliseDelivery(deliveryId);
+      } catch {
+        // Distance finalisation is best-effort. The status transition is the
+        // operation that matters; a Redis outage must not fail it, and the
+        // trail rows remain intact either way.
+      }
+    }
+
+    return updatedDelivery;
   }
 
   /** Convenience: ASSIGNED → PICKED_UP (driver only) */
