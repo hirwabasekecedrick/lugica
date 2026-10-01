@@ -12,9 +12,12 @@ const { io } = require("socket.io-client");
 const WEB = process.env.WEB_ORIGIN || "http://localhost:3000";
 const API = process.env.API_ORIGIN || "http://localhost:8080";
 const PASSWORD = process.env.SEED_PASSWORD || "Admin@123";
+<<<<<<< HEAD
 // The seed now creates driver1..driver3@lugica.com (develop PR #16). Override this
 // to point at a different driver account, e.g. a hand-made local fixture.
 const DRIVER_EMAIL = process.env.SEED_DRIVER_EMAIL || "driver1@lugica.com";
+=======
+>>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
 
 const results = [];
 function check(name, ok, detail = "") {
@@ -82,7 +85,11 @@ function waitFor(socket, event, ms = 8000) {
     JSON.stringify(admin.body),
   );
 
+<<<<<<< HEAD
   const driver = await webLogin(DRIVER_EMAIL);
+=======
+  const driver = await webLogin("driver1@gmail.com");
+>>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
   check("driver BFF login", driver.body.ok === true && driver.body.role === "DRIVER", JSON.stringify(driver.body));
 
   // 2. Token minting per role.
@@ -106,7 +113,11 @@ function waitFor(socket, event, ms = 8000) {
   check(
     "token carries { sub, email, role } the gateway reads",
     typeof claims.sub === "string" &&
+<<<<<<< HEAD
       claims.email === DRIVER_EMAIL &&
+=======
+      claims.email === "driver1@gmail.com" &&
+>>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
       claims.role === "DRIVER" &&
       claims.purpose === "socket",
     `exp in ${claims.exp - claims.iat}s, purpose=${claims.purpose}`,
@@ -163,7 +174,11 @@ driverSocket.on("error", (e) => driverErrors.push(e?.message ?? String(e)));
     await fetch(`${API}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+<<<<<<< HEAD
       body: JSON.stringify({ email: DRIVER_EMAIL, password: PASSWORD }),
+=======
+      body: JSON.stringify({ email: "driver1@gmail.com", password: PASSWORD }),
+>>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
     })
   ).json();
 
@@ -186,7 +201,11 @@ driverSocket.on("error", (e) => driverErrors.push(e?.message ?? String(e)));
     });
 
     const update = await pushed;
+<<<<<<< HEAD
     const me = (update || []).find((d) => d.email === DRIVER_EMAIL);
+=======
+    const me = (update || []).find((d) => d.email === "driver1@gmail.com");
+>>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
     check(
       "socket locationUpdate reaches the admin map in real time",
       Boolean(me && me.lastLatitude === -1.9701 && me.lastLongitude === 30.0875),

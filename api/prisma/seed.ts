@@ -250,6 +250,7 @@ async function main() {
     });
   }
 
+<<<<<<< HEAD
   console.log('Seeding Deliveries for Drivers...');
 
   const deliveryIds = {
@@ -380,6 +381,115 @@ async function main() {
       }
     ]
   });
+=======
+  // Deliveries
+  //
+  // Without these the tracking and driver views have nothing to render: the map
+  // needs coordinates and the driver's three lists (ASSIGNED to accept,
+  // IN_TRANSIT as the current journey, DELIVERED as history) need one delivery
+  // in each state.
+  //
+  // Guarded by a count rather than an upsert because Delivery has no natural
+  // unique key, and the seed is expected to be re-runnable. Note that the
+  // receipts/orders above use plain `create` for their items and rows, so this
+  // block is deliberately the only idempotent part.
+  console.log('Seeding Deliveries...');
+  const existingDeliveries = await prisma.delivery.count();
+  if (existingDeliveries === 0) {
+    // Kigali-area coordinates, so the OSM tiles land on the city.
+    const deliveryFixtures: Array<{
+      status: DeliveryStatus;
+      driverId: string | null;
+      vehicleId: string | null;
+      dropoffAddress: string;
+      dropoffLat: number;
+      dropoffLng: number;
+    }> = [
+      {
+        status: DeliveryStatus.PENDING,
+        driverId: null,
+        vehicleId: null,
+        dropoffAddress: 'KN 5 Rd, Kigali',
+        dropoffLat: -1.9441,
+        dropoffLng: 30.0619,
+      },
+      {
+        status: DeliveryStatus.ASSIGNED,
+        driverId: driver.id,
+        vehicleId: vehicle.id,
+        dropoffAddress: 'Remera, Kigali',
+        dropoffLat: -1.9578,
+        dropoffLng: 30.1218,
+      },
+      {
+        status: DeliveryStatus.IN_TRANSIT,
+        driverId: driver.id,
+        vehicleId: vehicle.id,
+        dropoffAddress: 'Nyamirambo, Kigali',
+        dropoffLat: -1.9826,
+        dropoffLng: 30.0446,
+      },
+      {
+        status: DeliveryStatus.DELIVERED,
+        driverId: driver.id,
+        vehicleId: vehicle.id,
+        dropoffAddress: 'Gikondo, Kigali',
+        dropoffLat: -1.9789,
+        dropoffLng: 30.0723,
+      },
+    ];
+
+    for (const fixture of deliveryFixtures) {
+      const created = await prisma.delivery.create({
+        data: {
+          clientId: clients[0].id,
+          pickupAddress: 'Lugica warehouse, Kigali',
+          pickupLat: -1.9497,
+          pickupLng: 30.0925,
+          dropoffAddress: fixture.dropoffAddress,
+          dropoffLat: fixture.dropoffLat,
+          dropoffLng: fixture.dropoffLng,
+          status: fixture.status,
+          driverId: fixture.driverId,
+          vehicleId: fixture.vehicleId,
+          ...(fixture.status === DeliveryStatus.DELIVERED
+            ? { deliveredAt: new Date(Date.now() - 3600000) }
+            : {}),
+        },
+      });
+
+      // Mirror the transitions the API would have written, so the driver's
+      // history panel is not empty on a fresh database.
+      if (fixture.status === DeliveryStatus.IN_TRANSIT) {
+        await prisma.deliveryStatusHistory.createMany({
+          data: [
+            {
+              deliveryId: created.id,
+              fromStatus: DeliveryStatus.PENDING,
+              toStatus: DeliveryStatus.ASSIGNED,
+              changedByUserId: admin.id,
+              notes: 'Seeded assignment',
+            },
+            {
+              deliveryId: created.id,
+              fromStatus: DeliveryStatus.ASSIGNED,
+              toStatus: DeliveryStatus.PICKED_UP,
+              changedByUserId: driver.id,
+              notes: 'Seeded pickup',
+            },
+            {
+              deliveryId: created.id,
+              fromStatus: DeliveryStatus.PICKED_UP,
+              toStatus: DeliveryStatus.IN_TRANSIT,
+              changedByUserId: driver.id,
+              notes: 'Seeded transit',
+            },
+          ],
+        });
+      }
+    }
+  }
+>>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
 
   console.log('Seeding Complete!');
 }
