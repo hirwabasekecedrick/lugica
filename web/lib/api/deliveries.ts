@@ -37,11 +37,7 @@ export const deliveries = {
   assign: (id: string, input: { driverId: string; vehicleId: string }) =>
     api.patch<Delivery>(`/deliveries/${id}/assign`, input),
 
-<<<<<<< HEAD
 /* ── Status transitions ─────────────────────────────────────────────────────
-=======
-  /* ── Status transitions ─────────────────────────────────────────────────────
->>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
    *
    * The state machine is fixed (deliveries.service.ts:190-222):
    *   PENDING    -> ASSIGNED  (admin assign only)
@@ -53,13 +49,10 @@ export const deliveries = {
    * Only the assigned driver or an admin may run these; a third driver gets a
    * 403. Each takes an optional `notes` (max 500 chars) and writes a
    * DeliveryStatusHistory row, and each broadcasts on the tracking gateway.
-<<<<<<< HEAD
-   *
+*
    * Note `notes ? { notes } : {}` rather than `{ notes }`: sending
    * `{ notes: undefined }` serialises to `{}` anyway, but an explicit empty
    * body keeps the request honest when there is nothing to record.
-=======
->>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
    */
 
   /** ASSIGNED -> PICKED_UP. The driver's accept action. */

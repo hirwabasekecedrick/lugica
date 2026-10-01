@@ -42,18 +42,12 @@ function check(name, ok, detail = "") {
 
 (async () => {
   const PASSWORD = process.env.SEED_PASSWORD || "Password123!";
-<<<<<<< HEAD
 // Matches the seed's driver1@lugica.com (develop PR #16). Override to target
-// another driver account, e.g. a hand-made local fixture.
-const DRIVER_EMAIL = process.env.SEED_DRIVER_EMAIL || "driver1@lugica.com";
+  // another driver account, e.g. a hand-made local fixture.
+  const DRIVER_EMAIL = process.env.SEED_DRIVER_EMAIL || "driver1@lugica.com";
 
   const adminToken = await login("admin@lugica.com", PASSWORD);
   const driverToken = await login(DRIVER_EMAIL, PASSWORD);
-=======
-
-  const adminToken = await login("admin@lugica.com", PASSWORD);
-  const driverToken = await login("driver1@gmail.com", PASSWORD);
->>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
   const clientToken = await login("client1@lugica.com", PASSWORD);
   check("login admin/driver/client", true);
 
@@ -153,11 +147,7 @@ const DRIVER_EMAIL = process.env.SEED_DRIVER_EMAIL || "driver1@lugica.com";
     // 9. The driver now appears in the admin live list.
     const liveRes = await call(adminToken, "GET", "/tracking/drivers");
     const live = await liveRes.json();
-<<<<<<< HEAD
-    const me = live.find((d) => d.email === DRIVER_EMAIL);
-=======
-    const me = live.find((d) => d.email === "driver1@gmail.com");
->>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
+const me = live.find((d) => d.email === DRIVER_EMAIL);
     check(
       "admin sees the driver live after a ping",
       Boolean(me),
