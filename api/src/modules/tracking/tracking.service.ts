@@ -1,40 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Prisma, Role, DeliveryStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { RedisService } from '../../redis/redis.service.js';
 import { LocationsService } from '../locations/locations.service.js';
+import {
+  DriverLiveStateStore,
+  type DriverLiveState,
+} from './driver-live-state.store.js';
 
-/** TTL for the per-driver live-state key in Redis (seconds). */
-const DRIVER_STATE_TTL_SECONDS = 120;
+export type { DriverLiveState };
 
-/** Redis key prefix for individual driver tracking state. */
-const DRIVER_STATE_PREFIX = 'tracking:driver:';
+/** Default trail sample size when the client does not ask for a specific one. */
+const DEFAULT_MAX_TRAIL_POINTS = 500;
 
-/** Redis key for the set of active driver IDs. */
-const ACTIVE_DRIVERS_SET = 'tracking:active_drivers';
-
-/**
- * Shape of the real-time driver state stored in Redis.
- * This is what admin clients receive via the `driversUpdate` WebSocket event
- * and via `GET /tracking/drivers`.
- */
-export interface DriverLiveState {
-  driverId: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  vehiclePlateNumber: string | null;
-  /** The delivery currently being tracked, if any. */
-  activeDeliveryId: string | null;
-  /** Current status: 'available' | 'on_delivery' | 'offline' */
-  trackingStatus: 'available' | 'on_delivery' | 'offline';
-  lastLatitude: number | null;
-  lastLongitude: number | null;
-  lastAccuracy: number | null;
-  lastSeenAt: string | null;
-  /** ISO timestamp when the driver started tracking. */
-  trackingStartedAt: string | null;
-}
+/** Hard ceiling, so a caller cannot request an unbounded response. */
+const MAX_TRAIL_POINTS_CEILING = 5000;
 
 @Injectable()
 export class TrackingService {
@@ -42,11 +21,11 @@ export class TrackingService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redis: RedisService,
+    private readonly store: DriverLiveStateStore,
     private readonly locationsService: LocationsService,
   ) {}
 
-  // ─── Driver State Management ──────────────────────────────────────────────
+  // ─── Driver State Management ─────────────────────────────────────────────
 
   /**
    * Mark a driver as actively tracking (they opened the app / started a shift).
@@ -78,40 +57,38 @@ export class TrackingService {
       throw new Error('Driver account is deactivated');
     }
 
+    const now = new Date().toISOString();
     const state: DriverLiveState = {
       driverId: driver.id,
       name: driver.name,
       email: driver.email,
       phone: driver.phone,
-      vehiclePlateNumber:
-        driver.assignedVehicles[0]?.plateNumber ?? null,
+      vehiclePlateNumber: driver.assignedVehicles[0]?.plateNumber ?? null,
       activeDeliveryId: null,
       trackingStatus: 'available',
       lastLatitude: null,
       lastLongitude: null,
       lastAccuracy: null,
-      lastSeenAt: new Date().toISOString(),
-      trackingStartedAt: new Date().toISOString(),
+      lastSeenAt: now,
+      trackingStartedAt: now,
     };
 
-    await this.writeDriverState(driverId, state);
+    await this.store.write(state);
     this.logger.log(`Driver ${driver.name} (${driverId}) started tracking`);
     return state;
   }
 
-  /**
-   * Mark a driver as no longer tracking (closed the app / ended shift).
-   */
+  /** Mark a driver as no longer tracking (closed the app / ended shift). */
   async stopTracking(driverId: string): Promise<void> {
-    await this.redis.del(`${DRIVER_STATE_PREFIX}${driverId}`);
-    await this.redis.clientInstance.srem(ACTIVE_DRIVERS_SET, driverId);
+    await this.store.remove(driverId);
     this.logger.log(`Driver ${driverId} stopped tracking`);
   }
 
   /**
-   * Process an incoming location update from a driver.
-   * - Updates the live state in Redis
-   * - Persists the location to Postgres + Redis via LocationsService
+   * Process an incoming location update from a driver over the socket.
+   *
+   * Delegates persistence to `LocationsService.ping`, which also maintains the
+   * live-state key — so the socket and REST paths cannot drift apart again.
    */
   async handleLocationUpdate(
     driverId: string,
@@ -120,7 +97,6 @@ export class TrackingService {
     accuracy: number | null,
     deliveryId: string | null,
   ): Promise<DriverLiveState | null> {
-    // Persist location via the existing locations service
     await this.locationsService.ping(driverId, {
       latitude,
       longitude,
@@ -128,118 +104,167 @@ export class TrackingService {
       deliveryId: deliveryId ?? undefined,
     });
 
-    // Update live state in Redis
-    const existing = await this.getDriverState(driverId);
-
-    if (!existing) {
-      // Driver hasn't called startTracking — auto-bootstrap their state
-      const state = await this.startTracking(driverId);
-      state.lastLatitude = latitude;
-      state.lastLongitude = longitude;
-      state.lastAccuracy = accuracy;
-      state.lastSeenAt = new Date().toISOString();
-      state.activeDeliveryId = deliveryId;
-      if (deliveryId) {
-        state.trackingStatus = 'on_delivery';
-      }
-      await this.writeDriverState(driverId, state);
-      return state;
-    }
-
-    existing.lastLatitude = latitude;
-    existing.lastLongitude = longitude;
-    existing.lastAccuracy = accuracy;
-    existing.lastSeenAt = new Date().toISOString();
-    if (deliveryId) {
-      existing.activeDeliveryId = deliveryId;
-      existing.trackingStatus = 'on_delivery';
-    }
-    await this.writeDriverState(driverId, existing);
-    return existing;
+    return this.store.read(driverId);
   }
 
-  // ─── Read Operations ──────────────────────────────────────────────────────
+  // ─── Read Operations ─────────────────────────────────────────────────────
 
-  /**
-   * Return the live state for a single driver.
-   */
-  async getDriverState(
-    driverId: string,
-  ): Promise<DriverLiveState | null> {
-    return this.redis.get<DriverLiveState>(
-      `${DRIVER_STATE_PREFIX}${driverId}`,
-    );
+  /** Return the live state for a single driver. */
+  async getDriverState(driverId: string): Promise<DriverLiveState | null> {
+    return this.store.read(driverId);
   }
 
-  /**
-   * Return the live state for ALL currently-active drivers.
-   * Used by admin clients for the dispatch map.
-   */
+  /** Return the live state of every currently-active driver (admin dispatch map). */
   async getAllActiveDrivers(): Promise<DriverLiveState[]> {
-    const driverIds = await this.redis.clientInstance.smembers(
-      ACTIVE_DRIVERS_SET,
+    return this.store.readAll();
+  }
+
+  /**
+   * GPS trail for a delivery, oldest first.
+   *
+   * `maxPoints` bounds the payload. At the 3s transmission interval a long urban
+   * delivery accrues well over a thousand rows, and every consumer that
+   * refetched the full trail would pay for all of them. Sampling is a uniform
+   * stride rather than the first N, so the path keeps its overall shape instead
+   * of collapsing onto the trip's opening leg.
+   *
+   * The stride is applied in SQL via `row_number` because sampling in the
+   * application would mean one indexed query per output point.
+   */
+  async getDeliveryTrail(
+    deliveryId: string,
+    options: { maxPoints?: number; since?: Date } = {},
+  ) {
+    const maxPoints = Math.min(
+      Math.max(options.maxPoints ?? DEFAULT_MAX_TRAIL_POINTS, 2),
+      MAX_TRAIL_POINTS_CEILING,
     );
 
-    if (!driverIds.length) {
-      return [];
-    }
-
-    const pipeline = this.redis.clientInstance.pipeline();
-    for (const id of driverIds) {
-      pipeline.get(`${DRIVER_STATE_PREFIX}${id}`);
-    }
-    const results = await pipeline.exec();
-
-    const drivers: DriverLiveState[] = [];
-    if (results) {
-      for (const [err, val] of results) {
-        if (!err && typeof val === 'string') {
-          try {
-            drivers.push(JSON.parse(val) as DriverLiveState);
-          } catch {
-            // skip corrupt entries
-          }
-        }
-      }
-    }
-    return drivers;
+    return this.prisma.$queryRaw<TrailRow[]>(Prisma.sql`
+      SELECT "latitude", "longitude", "accuracy", "recordedAt", "cumulativeDistanceMeters"
+      FROM (
+        SELECT
+          "latitude", "longitude", "accuracy", "recordedAt", "cumulativeDistanceMeters",
+          row_number() OVER (ORDER BY "recordedAt" ASC) AS rn,
+          count(*)     OVER ()                            AS total
+        FROM "driver_locations"
+        WHERE "deliveryId" = ${deliveryId}
+          AND (${options.since ?? null}::timestamptz IS NULL OR "recordedAt" > ${options.since ?? null})
+      ) AS sampled
+      WHERE rn % GREATEST(1, FLOOR(total::numeric / ${maxPoints})::int) = 0
+      ORDER BY rn ASC
+    `);
   }
 
-  /**
-   * Return the GPS trail for a specific delivery (all location points
-   * recorded while the driver had this deliveryId active).
-   */
-  async getDeliveryTrail(deliveryId: string) {
-    return this.prisma.driverLocation.findMany({
-      where: { deliveryId },
-      orderBy: { recordedAt: 'asc' },
-      select: {
-        latitude: true,
-        longitude: true,
-        accuracy: true,
-        recordedAt: true,
-      },
-    });
-  }
-
-  /**
-   * Role-aware wrapper around getDeliveryTrail.
-   * Admin: any delivery. Driver: only assigned. Client: only their own.
-   */
+  /** Role-aware wrapper around getDeliveryTrail. */
   async getDeliveryTrailForUser(
     deliveryId: string,
     currentUser: { sub: string; role: Role },
+    options: { maxPoints?: number; since?: Date } = {},
   ) {
-    if (currentUser.role !== Role.ADMIN) {
-      const delivery = await this.prisma.delivery.findUnique({
+    await this.assertDeliveryAccess(deliveryId, currentUser);
+    return this.getDeliveryTrail(deliveryId, options);
+  }
+
+  // ─── Trip metrics ────────────────────────────────────────────────────────
+
+  /**
+   * Distance and elapsed time for a delivery.
+   *
+   * Distance prefers the exact Redis accumulator (written on every ping) and
+   * falls back to the periodically-persisted column, so an in-flight trip
+   * reports the live figure while a completed one reports the final one.
+   *
+   * Elapsed is derived from `DeliveryStatusHistory` rather than stored twice:
+   * the clock starts at PICKED_UP — the moment the driver physically takes the
+   * goods — and stops at the first terminal status. Deriving it means the two
+   * can never disagree.
+   */
+  async getDeliverySummary(
+    deliveryId: string,
+    currentUser: { sub: string; role: Role },
+  ) {
+    await this.assertDeliveryAccess(deliveryId, currentUser);
+
+    const [delivery, leg, history, pointCount] = await Promise.all([
+      this.prisma.delivery.findUnique({
         where: { id: deliveryId },
-        select: { clientId: true, driverId: true },
-      });
+        select: { status: true, distanceMeters: true },
+      }),
+      this.store.readLeg(deliveryId),
+      this.prisma.deliveryStatusHistory.findMany({
+        where: { deliveryId },
+        orderBy: { createdAt: 'asc' },
+        select: { toStatus: true, createdAt: true },
+      }),
+      this.prisma.driverLocation.count({ where: { deliveryId } }),
+    ]);
 
-      if (!delivery) {
-        throw new Error('Delivery not found');
-      }
+    if (!delivery) {
+      throw new Error('Delivery not found');
+    }
 
+    const distanceMeters = leg
+      ? leg.cumulativeMeters
+      : delivery.distanceMeters;
+
+    const pickedUpAt =
+      history.find((h) => h.toStatus === DeliveryStatus.PICKED_UP)?.createdAt ??
+      null;
+
+    const terminalAt = history.find((h) =>
+      TERMINAL_STATUSES.includes(h.toStatus),
+    )?.createdAt;
+
+    const status: DeliveryStatus = delivery.status;
+    const isTerminal = TERMINAL_STATUSES.includes(status);
+
+    // An in-flight trip keeps counting until a terminal transition is recorded.
+    const elapsedSeconds =
+      pickedUpAt && (isTerminal ? terminalAt : new Date())
+        ? Math.max(
+            0,
+            Math.round(
+              ((isTerminal ? terminalAt! : new Date()).getTime() -
+                pickedUpAt.getTime()) /
+                1000,
+            ),
+          )
+        : 0;
+
+    return {
+      deliveryId,
+      status,
+      distanceMeters: Math.round(distanceMeters),
+      distanceKilometers: Math.round((distanceMeters / 1000) * 100) / 100,
+      pickedUpAt,
+      terminalAt,
+      elapsedSeconds,
+      isTerminal,
+      pointCount,
+    };
+  }
+
+  /**
+   * Authorise access to one delivery's tracking data.
+   *
+   * Extracted because the same check has three callers (trail, summary, and the
+   * gateway's `delivery:watch` room join) and must not diverge between them.
+   */
+  async assertDeliveryAccess(
+    deliveryId: string,
+    currentUser: { sub: string; role: Role },
+  ): Promise<{ clientId: string; driverId: string | null; status: DeliveryStatus }> {
+    const delivery = await this.prisma.delivery.findUnique({
+      where: { id: deliveryId },
+      select: { clientId: true, driverId: true, status: true },
+    });
+
+    if (!delivery) {
+      throw new Error('Delivery not found');
+    }
+
+    if (currentUser.role !== Role.ADMIN) {
       if (
         currentUser.role === Role.CLIENT &&
         delivery.clientId !== currentUser.sub
@@ -255,20 +280,22 @@ export class TrackingService {
       }
     }
 
-    return this.getDeliveryTrail(deliveryId);
-  }
-
-  // ─── Internal Helpers ─────────────────────────────────────────────────────
-
-  private async writeDriverState(
-    driverId: string,
-    state: DriverLiveState,
-  ): Promise<void> {
-    await this.redis.setWithTTL(
-      `${DRIVER_STATE_PREFIX}${driverId}`,
-      state,
-      DRIVER_STATE_TTL_SECONDS,
-    );
-    await this.redis.clientInstance.sadd(ACTIVE_DRIVERS_SET, driverId);
+    return delivery;
   }
 }
+
+/** Statuses after which a trip stops accruing distance and elapsed time. */
+const TERMINAL_STATUSES: readonly DeliveryStatus[] = [
+  DeliveryStatus.DELIVERED,
+  DeliveryStatus.FAILED,
+  DeliveryStatus.CANCELLED,
+];
+
+/** Row shape returned by the raw trail query. */
+type TrailRow = {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  recordedAt: Date;
+  cumulativeDistanceMeters: number;
+};

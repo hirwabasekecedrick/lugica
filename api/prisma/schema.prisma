@@ -133,6 +133,13 @@ model Delivery {
   status              DeliveryStatus @default(PENDING)
   estimatedDeliveryAt DateTime?
   deliveredAt         DateTime?
+  /// Distance driven on this delivery, in metres.
+  ///
+  /// Accumulated per GPS ping (see LocationsService) and flushed exactly when the
+  /// delivery reaches a terminal status. Elapsed travel time is deliberately NOT
+  /// stored here: it is derived from DeliveryStatusHistory timestamps so the two
+  /// values cannot disagree.
+  distanceMeters      Float          @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -176,6 +183,14 @@ model DriverLocation {
   longitude  Float
   accuracy   Float?
   recordedAt DateTime @default(now())
+  /// Distance from the previous point for this delivery, in metres. Zero when the
+  /// leg was rejected as implausible (see common/geo/haversine.ts isPlausibleLeg),
+  /// which is how parked-vehicle GPS drift is excluded from the total.
+  legDistanceMeters Float @default(0)
+  /// Running total for the delivery at the moment this point was recorded. Makes
+  /// the total readable without re-summing the trail, and lets the accumulator be
+  /// re-seeded from this row if its Redis key is lost mid-trip.
+  cumulativeDistanceMeters Float @default(0)
 
   // Relations
   driver   User      @relation(fields: [driverId], references: [id])

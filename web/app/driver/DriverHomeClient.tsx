@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import Link from "next/link";
 import { AppFrame } from "@/app/components/AppFrame";
 import { DeliveryIcon } from "@/app/components/sidebar-icons";
 import { LoadingState, ErrorState, EmptyState } from "@/app/components/ui-states";
 import LiveDriverMap from "@/app/components/tracking/LiveDriverMap";
+import TripMetrics from "@/app/components/tracking/TripMetrics";
 import type { MapMarker } from "@/app/components/tracking/markers";
 import {
   useDeliveries,
+  useDeliverySummary,
   useDeliveryTrail,
   useDriverTransition,
   useMyTrackingState,
@@ -57,6 +60,7 @@ export default function DriverHomeClient() {
   // Hook order is fixed: the trail query is enabled by the active delivery's id
   // rather than being mounted inside the conditional branch below.
   const trailQuery = useDeliveryTrail(active?.id ?? null);
+  const summaryQuery = useDeliverySummary(active?.id ?? null);
 
   // Keep the tracker pointed at whatever the driver is actually carrying, so
   // every ping is bound to that delivery without re-subscribing on each change.
@@ -128,6 +132,8 @@ export default function DriverHomeClient() {
             <ActiveJourney
               delivery={active}
               trailQuery={trailQuery}
+              summaryQuery={summaryQuery}
+              tracking={tracking}
               pending={transition.isPending}
               onAction={run}
             />
@@ -213,11 +219,12 @@ function TrackingBanner({
   tracking: ReturnType<typeof useDriverTracking>;
   lastSeenAt: string | null;
 }) {
-  const { online, geolocation, status, lastSentAt, lastError } = tracking;
+  const { online, geolocation, status, lastSentAt, lastError, visible } = tracking;
 
   const geoText = {
     idle: online ? "Waiting for a GPS fix…" : "Location sharing is off",
-    watching: "Sharing your location",
+    watching: "Sharing your location every 3 seconds",
+    paused: "Paused — this page is in the background, so nothing is being sent",
     denied: "Location permission denied — ask for it in your browser settings",
     unavailable: "This browser has no geolocation support",
   }[geolocation];
@@ -253,27 +260,39 @@ function TrackingBanner({
       )}
 
       {/*
-        The admin live map reads only the Redis state the socket writes, so a
-        dropped websocket means pings keep recording your trail but nobody sees
-        you move. Worth saying out loud rather than looking like a bug.
+        Foreground-only is a hard browser limit, not a bug: watchPosition is
+        suspended when the tab is backgrounded or the screen locks. At a 3s
+        interval the resulting gap on the admin map is plainly visible, so it is
+        stated rather than left to look like tracking stopped working.
       */}
-      {online && status !== "live" && (
+      {online && geolocation === "paused" && (
         <p className="text-[11px] text-warning">
-          Your live connection is degraded, so administrators will not see you on
-          the map until it recovers. Your trip is still being recorded.
+          Tracking is paused because this tab is not in the foreground. Keep the
+          page open and visible while driving, or your position will not update.
         </p>
       )}
 
       {/*
-        Known API bug: the global ThrottlerGuard throws on WebSocket handlers,
-        so `tracking:start` never reaches the service. The driver still becomes
-        visible on the map as soon as the first location ping arrives, because
-        that path calls startTracking internally. See docs/API-GAPS.md #23.
+        A degraded socket still records the trail and the live state (gap #21 was
+        fixed), but there is no socket to push from, so watchers see the position
+        only after they reconnect. Worth saying rather than looking like a bug.
       */}
+      {online && status !== "live" && (
+        <p className="text-[11px] text-warning">
+          Your live connection is degraded, so your position is being recorded but
+          not pushed to watchers. It will reappear once the connection recovers.
+        </p>
+      )}
+
       {lastError && (
         <p className="text-[11px] text-text-muted">
-          The server rejected a tracking request ({lastError}). You will appear on
-          the admin map once your next location is sent.
+          The server rejected a tracking request ({lastError}).
+        </p>
+      )}
+
+      {!visible && online && (
+        <p className="text-[11px] text-text-muted">
+          {`Hidden since the page lost focus — ${new Date().toLocaleTimeString()}.`}
         </p>
       )}
     </div>
@@ -283,11 +302,15 @@ function TrackingBanner({
 function ActiveJourney({
   delivery,
   trailQuery,
+  summaryQuery,
+  tracking,
   pending,
   onAction,
 }: {
   delivery: Delivery;
   trailQuery: ReturnType<typeof useDeliveryTrail>;
+  summaryQuery: ReturnType<typeof useDeliverySummary>;
+  tracking: ReturnType<typeof useDriverTracking>;
   pending: boolean;
   onAction: (
     id: string,
@@ -296,33 +319,57 @@ function ActiveJourney({
   ) => void;
 }) {
   /**
-   * The dropoff is the destination the driver is navigating to, so it is the
-   * marker the map is built around. The pickup is shown for orientation and
-   * only before the package is collected.
+   * The driver's own marker only.
+   *
+   * Pickup and drop-off are passed to `LiveDriverMap` as dedicated props rather
+   * than encoded as markers, so the map labels them correctly and every surface
+   * (driver, admin, client) draws the same three-point picture.
    */
   const markers = useMemo<MapMarker[]>(() => {
-    const list: MapMarker[] = [
-      {
-        id: `dropoff-${delivery.id}`,
-        latitude: delivery.dropoffLat,
-        longitude: delivery.dropoffLng,
-        kind: "dropoff",
-        label: "Dropoff",
-      },
-    ];
-
-    if (delivery.status === "PICKED_UP") {
-      list.push({
-        id: `pickup-${delivery.id}`,
-        latitude: delivery.pickupLat,
-        longitude: delivery.pickupLng,
-        kind: "pickup",
-        label: "Pickup",
-      });
+    const live = tracking.lastKnownPosition;
+    if (live) {
+      return [
+        {
+          id: "me",
+          latitude: live.latitude,
+          longitude: live.longitude,
+          kind: "driver",
+          label: "You",
+          onDelivery: true,
+        },
+      ];
     }
 
-    return list;
-  }, [delivery]);
+    const last = trailQuery.data?.[(trailQuery.data?.length ?? 0) - 1];
+    if (!last) return [];
+    return [
+      {
+        id: "me",
+        latitude: last.latitude,
+        longitude: last.longitude,
+        kind: "driver",
+        label: "You",
+        stale: true,
+        onDelivery: true,
+      },
+    ];
+  }, [tracking.lastKnownPosition, trailQuery.data]);
+
+  /** Extend the fetched breadcrumb with the position sent most recently. */
+  const path = useMemo(() => {
+    const trail = trailQuery.data ?? [];
+    const live = tracking.lastKnownPosition;
+    if (!live) return trail;
+    return [
+      ...trail,
+      {
+        latitude: live.latitude,
+        longitude: live.longitude,
+        accuracy: live.accuracy,
+        recordedAt: new Date().toISOString(),
+      },
+    ];
+  }, [trailQuery.data, tracking.lastKnownPosition]);
 
   return (
     <article className="bg-page border border-accent/40 rounded-xl p-4 space-y-4">
@@ -340,12 +387,17 @@ function ActiveJourney({
         </span>
       </div>
 
+      <TripMetrics summary={summaryQuery.data} compact />
+
       <LiveDriverMap
         markers={markers}
-        trail={trailQuery.data}
-        focusId={`dropoff-${delivery.id}`}
+        trail={path}
+        pickup={[delivery.pickupLat, delivery.pickupLng]}
+        pickupLabel={delivery.pickupAddress}
+        dropoff={[delivery.dropoffLat, delivery.dropoffLng]}
+        dropoffLabel={delivery.dropoffAddress}
         className="h-[300px] w-full"
-        emptyMessage="This delivery has no coordinates."
+        emptyMessage="This delivery has no coordinates yet."
       />
 
       {trailQuery.data && trailQuery.data.length > 0 && (
@@ -395,7 +447,14 @@ function DeliveryCard({ delivery, action }: { delivery: Delivery; action?: React
     <article className="bg-page border border-border rounded-xl p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-text truncate">{delivery.dropoffAddress}</p>
+          {/* Deep link to the detail page. driver1 had this link but pointed it at
+              a route that never existed, so every card 404'd. */}
+          <Link
+            href={`/driver/deliveries/${delivery.id}`}
+            className="text-xs font-bold text-text hover:text-text-accent transition-colors truncate block"
+          >
+            {delivery.dropoffAddress}
+          </Link>
           <p className="text-[11px] text-text-muted truncate">from {delivery.pickupAddress}</p>
           <p className="text-[11px] text-text-muted mt-1">
             {delivery.client?.name ?? "Client"} ·{" "}

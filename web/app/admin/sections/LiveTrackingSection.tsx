@@ -2,9 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { LoadingState, ErrorState } from "@/app/components/ui-states";
-import { useActiveDrivers } from "@/lib/api/hooks";
+import {
+  useActiveDrivers,
+  useDeliveries,
+  useDeliverySummary,
+  useDeliveryTrail,
+} from "@/lib/api/hooks";
 import LiveDriverMap from "@/app/components/tracking/LiveDriverMap";
 import DriverListPanel from "@/app/components/tracking/DriverListPanel";
+import TripMetrics from "@/app/components/tracking/TripMetrics";
 import { driverMarkers } from "@/app/components/tracking/markers";
 import { useDriverSocket } from "@/app/components/tracking/useDriverSocket";
 import { isStalePing } from "@/lib/format";
@@ -22,6 +28,11 @@ const STATUS_TEXT: Record<string, { label: string; className: string }> = {
  * Read-only by design. The API has no admin-side command for a driver's
  * position, and an admin moving a driver would contradict the trail recorded in
  * Postgres; actions live on the driver's own page.
+ *
+ * Focusing a driver also loads that driver's active delivery: its breadcrumb, its
+ * pickup and drop-off, and its distance/elapsed figures. All three come from the
+ * API rather than being recomputed here, so the admin figure is identical to the
+ * one the driver and the customer are seeing.
  */
 export default function LiveTrackingSection() {
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -31,6 +42,23 @@ export default function LiveTrackingSection() {
   const drivers = useMemo(() => driversQuery.data ?? [], [driversQuery.data]);
 
   const markers = useMemo(() => driverMarkers(drivers), [drivers]);
+
+  // Default to the first driver so the map is never showing the whole fleet with
+  // no route context when exactly one driver is on shift.
+  const effectiveFocus = focusId ?? drivers[0]?.driverId ?? null;
+  const focused = drivers.find((d) => d.driverId === effectiveFocus) ?? null;
+  const focusedDeliveryId = focused?.activeDeliveryId ?? null;
+
+  // The delivery detail supplies the pickup/drop-off coordinates the live state
+  // does not carry. Only the focused driver's delivery is fetched.
+  const deliveriesQuery = useDeliveries({ enabled: Boolean(focusedDeliveryId) });
+  const focusedDelivery = useMemo(() => {
+    if (!focusedDeliveryId) return null;
+    return (deliveriesQuery.data ?? []).find((d) => d.id === focusedDeliveryId) ?? null;
+  }, [deliveriesQuery.data, focusedDeliveryId]);
+
+  const trailQuery = useDeliveryTrail(focusedDeliveryId);
+  const summaryQuery = useDeliverySummary(focusedDeliveryId);
 
   // Stale drivers stay on the map: the API drops them from Redis after ~120s,
   // so a disappearance is not the same event as a stop.
@@ -64,13 +92,38 @@ export default function LiveTrackingSection() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-        <LiveDriverMap
-          markers={markers}
-          focusId={focusId}
-          emptyMessage="No driver is currently sending location pings."
-        />
+        <div className="space-y-4">
+          <LiveDriverMap
+            markers={markers}
+            trail={trailQuery.data}
+            focusId={effectiveFocus}
+            pickup={
+              focusedDelivery
+                ? ([focusedDelivery.pickupLat, focusedDelivery.pickupLng] as [number, number])
+                : null
+            }
+            pickupLabel={focusedDelivery?.pickupAddress ?? null}
+            dropoff={
+              focusedDelivery
+                ? ([focusedDelivery.dropoffLat, focusedDelivery.dropoffLng] as [number, number])
+                : null
+            }
+            dropoffLabel={focusedDelivery?.dropoffAddress ?? null}
+            emptyMessage="No driver is currently sending location updates."
+          />
 
-        <DriverListPanel drivers={drivers} focusId={focusId} onFocus={setFocusId} />
+          {focusedDeliveryId ? (
+            <TripMetrics summary={summaryQuery.data} />
+          ) : (
+            <p className="text-[11px] text-text-muted bg-page border border-border rounded-xl p-3">
+              {focused
+                ? `${focused.name || focused.email} is online but not carrying a delivery, so there is no route or distance to show.`
+                : "Select a driver to see their route, distance travelled, and elapsed time."}
+            </p>
+          )}
+        </div>
+
+        <DriverListPanel drivers={drivers} focusId={effectiveFocus} onFocus={setFocusId} />
       </div>
 
       {staleCount > 0 && (
@@ -80,6 +133,18 @@ export default function LiveTrackingSection() {
           moving well before it disappears.
         </p>
       )}
+
+      {/*
+        Foreground-only transmission is a browser limit, not an API fault: a
+        driver whose phone is locked or whose tab is backgrounded stops sending.
+        At a 3s interval that is soon visible as a frozen marker, so it is called
+        out to avoid reading as a gateway fault.
+      */}
+      <p className="text-[11px] text-text-muted">
+        Drivers transmit every 3 seconds while the driver app is open and in the
+        foreground. Browsers suspend location updates in the background, so a
+        frozen marker often means the driver's app is no longer foregrounded.
+      </p>
     </div>
   );
 }

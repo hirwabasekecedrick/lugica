@@ -38,9 +38,24 @@ the changes that would let the frontend do the right thing instead of the fallba
 | 18 | polish | Catalog | Products cannot be deleted, only archived |
 | 19 | polish | Pagination | Inconsistent shapes across endpoints; no `totalPages` on orders; catalog cursor never returns the next cursor |
 | 20 | polish | Seed | Seed creates no deliveries, so tracking and driver views start empty |
-| 21 | blocker | Tracking | `POST /locations/ping` never populates the live-driver state the admin map reads |
+| 21 | **fixed** | Tracking | `POST /locations/ping` never populated the live-driver state the admin map reads |
 | 22 | degraded | Tracking | Socket gateway shares `jwt.accessSecret`, with no purpose or audience claim |
-| 23 | blocker | Tracking | Global `ThrottlerGuard` throws on WebSocket handlers; `tracking:start` and `tracking:stop` never run |
+| 23 | **fixed** | Tracking | Global `ThrottlerGuard` throws on WebSocket handlers; `tracking:start` and `tracking:stop` never run |
+
+**Fixed 2026-10-01** — #21 and #23 are closed in the API itself, not worked around:
+
+- **#21** — extracted `DriverLiveStateStore` (`api/src/modules/tracking/driver-live-state.store.ts`).
+  `LocationsService.ping` and `TrackingService` now both write `tracking:driver:{id}` under one
+  shared TTL, and the admin map reads that. `POST /locations/ping` is therefore authoritative.
+- **#23** — `WsAwareThrottlerGuard` overrides `canActivate` to return early when
+  `context.getType() !== 'http'`, so WebSocket handlers are no longer wrapped by the throttler.
+  HTTP rate limiting, including the `@Throttle` on `POST /locations/ping`, is unchanged.
+
+A third, previously undocumented gap was closed at the same time:
+
+- **`delivery:watch` had no authorization check.** Any authenticated user could join any
+  `delivery:{id}` room and receive that delivery's live driver position. The gateway now calls
+  `TrackingService.assertDeliveryAccess`, the same check the REST trail and summary endpoints use.
 
 ---
 
@@ -370,7 +385,7 @@ Everything below the users block should follow the delivery pattern.
 
 ---
 
-### 21. `POST /locations/ping` never populates the live-driver state
+### 21. ~~`POST /locations/ping` never populates the live-driver state~~ — **fixed**
 
 **Location:** `api/src/modules/locations/locations.service.ts:29-30` vs
 `api/src/modules/tracking/tracking.service.ts:11-14, :178-191`
@@ -397,14 +412,33 @@ websocket is blocked. The fallback preserves the trail but does **not** keep the
 visible, so `/driver` states this to the user outright ("administrators will not see you on
 the map until it recovers") rather than appearing to work.
 
-**Requested:** have `ping` call the same state writer the socket uses — i.e. make
-`LocationsService.ping` update `tracking:driver:{id}` and add the id to
-`tracking:active_drivers`, and reconcile the two TTLs (60s vs 120s). `ping` is also the only
-path available to a client that cannot hold a websocket open, so it should be authoritative.
+**Fixed:** the key namespaces are unified behind `DriverLiveStateStore`
+(`api/src/modules/tracking/driver-live-state.store.ts`), with one TTL. `LocationsService.ping`
+writes the live state and bootstraps a driver who has not called `tracking:start`, so a driver who
+only ever pings is now visible on the admin map. `ping` also accumulates per-delivery distance —
+see the metrics note below.
+
+### Distance and elapsed time (added 2026-10-01)
+
+Neither figure existed. Both are now server-authoritative so the driver, an admin, and the
+ordering client cannot disagree:
+
+- `DriverLocation.legDistanceMeters` / `cumulativeDistanceMeters` record each point's contribution.
+- `Delivery.distanceMeters` is the durable running total, flushed exactly on a terminal transition.
+- `GET /tracking/deliveries/:id/summary` returns distance and elapsed time under the same role
+  rules as the trail. Elapsed is **derived** from `DeliveryStatusHistory` (PICKED_UP -> first
+  terminal status) rather than stored, so it cannot drift from the status history.
+- `GET /tracking/deliveries/:id/trail` accepts `maxPoints` (uniform stride, default 500) and
+  `since`. At a 3s transmission interval a single trip passes 1000 points quickly, so an unbounded
+  trail response was not viable.
+
+**Still open:** driver location history has no retention policy. At 3s that is ~28,800 rows per
+driver per day, so a scheduled cleanup of `driver_locations` (e.g. beyond 30 days) needs a
+product decision before it is scheduled.
 
 ---
 
-### 23. Global `ThrottlerGuard` throws on WebSocket handlers
+### 23. ~~Global `ThrottlerGuard` throws on WebSocket handlers~~ — **fixed**
 
 **Location:** `api/src/app.module.ts` (`ThrottlerGuard` registered as `APP_GUARD`),
 surfacing from `@nestjs/throttler@6.7.1` `throttler.guard.ts:267` (`setResponseHeader`)
@@ -440,9 +474,12 @@ compensates on three fronts — it still works (the first ping registers the dri
 the gateway's `error` event to the driver instead of silently claiming success, and
 `GET /tracking/me` polling reports the real server-side state rather than the local toggle.
 
-**Requested:** exclude the gateway from the throttler, or make `ThrottlerGuard` context-aware
-(skip `setResponseHeader` when `getResponse()` is undefined). Rate limiting a socket handler
-needs a different key strategy anyway, since there is no response object to attach headers to.
+**Fixed:** replaced the `APP_GUARD` registration with `WsAwareThrottlerGuard`
+(`api/src/common/guards/ws-aware-throttler.guard.ts`), which overrides `canActivate` and returns
+early for non-HTTP contexts. `handleRequest` is deliberately *not* overridden: in
+@nestjs/throttler 6.7 it receives only a props object and no execution context, so there is nowhere
+left to branch on context type. `web/scripts/verify-tracking.cjs` asserted this as a known failure
+and now requires `trackingState` in reply.
 
 ---
 

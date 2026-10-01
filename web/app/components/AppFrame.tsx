@@ -8,14 +8,6 @@ import AppSidebarNav, {
 } from "./AppSidebarNav";
 import { MenuIcon } from "./sidebar-icons";
 
-/** Flat, icon-less item shape still used by the /driver1 pages. */
-export interface LegacySidebarItem {
-  href: string;
-  label: string;
-  badge?: number;
-  icon?: React.ElementType;
-}
-
 /**
  * Page frame for the route-based staff surfaces (/admin/*, /driver).
  *
@@ -24,18 +16,15 @@ export interface LegacySidebarItem {
  * sales-channel group is appended here because those destinations are the same
  * on every surface.
  *
- * Callers pass `sidebarGroups` for grouped, icon-bearing nav. The older
- * `sidebarItems` + `activeHref` pair is still accepted and is rendered through
- * the same component as a single unlabelled group, so the /driver1 pages keep
- * working without being rewritten.
+ * Callers pass grouped nav via `sidebarGroups`. The former flat `sidebarItems`
+ * + `activeHref` pair is gone: its only consumer was /driver1, which was a
+ * duplicate of /driver and has been removed.
  */
 export function AppFrame({
   title,
   subtitle,
   children,
   sidebarGroups,
-  sidebarItems,
-  activeHref,
   quickActions,
   actions,
 }: {
@@ -44,33 +33,13 @@ export function AppFrame({
   children: React.ReactNode;
   /** Grouped nav for this surface, without the shared sales-channel group. */
   sidebarGroups?: SidebarGroup[];
-  /** Legacy flat nav. Prefer sidebarGroups. */
-  sidebarItems?: LegacySidebarItem[];
-  /** Legacy active-route marker. Requires sidebarItems. */
-  activeHref?: string;
   quickActions?: React.ComponentProps<typeof AppSidebarNav>["quickActions"];
   actions?: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const resolvedGroups: SidebarGroup[] = sidebarGroups?.length
-    ? sidebarGroups
-    : sidebarItems
-      ? [
-          {
-            items: sidebarItems.map((item, index) => ({
-              key: item.href || `item-${index}`,
-              label: item.label,
-              href: item.href,
-              badge: item.badge,
-              icon: item.icon ?? DefaultNavIcon,
-            })),
-          },
-        ]
-      : [];
-
   const groups: SidebarGroup[] = [
-    ...resolvedGroups,
+    ...(sidebarGroups ?? []),
     { title: "SALES CHANNELS", items: SALES_CHANNEL_LINKS },
   ];
 
@@ -79,9 +48,6 @@ export function AppFrame({
       <AppSidebarNav
         groups={groups}
         quickActions={quickActions}
-        // Legacy callers signal the active row with activeHref; grouped callers
-        // rely on each item's href matching the pathname instead.
-        selectedKey={activeHref}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
       />
@@ -108,14 +74,5 @@ export function AppFrame({
         </div>
       </div>
     </div>
-  );
-}
-
-/** Placeholder glyph for legacy items that declare no icon. */
-function DefaultNavIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
-      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h4a1 1 0 001-1v-3h2v3a1 1 0 001 1h4a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-    </svg>
   );
 }

@@ -285,6 +285,46 @@ export type TrailPoint = {
   longitude: number;
   accuracy: number | null;
   recordedAt: string;
+  /** Distance covered on the delivery up to this point, in metres. */
+  cumulativeDistanceMeters?: number;
+};
+
+/**
+ * A driver's position pushed to a delivery's watchers.
+ *
+ * Emitted by the gateway as `deliveryLocationUpdate` to the `delivery:{id}`
+ * room. It is a positional subset of `DriverLiveState`: watchers care about where
+ * the driver is, not their profile or fleet.
+ */
+export type DriverLivePosition = {
+  deliveryId: string;
+  driverId: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  timestamp: string;
+};
+
+/**
+ * Distance and elapsed time for a delivery, from
+ * `GET /tracking/deliveries/:id/summary`.
+ *
+ * Server-authoritative so the driver, an admin, and the ordering client all see
+ * identical figures. `elapsedSeconds` keeps counting while `isTerminal` is false.
+ */
+export type DeliverySummary = {
+  deliveryId: string;
+  status: string;
+  distanceMeters: number;
+  distanceKilometers: number;
+  /** When the driver took the goods. Null before the PICKED_UP transition. */
+  pickedUpAt: string | null;
+  /** First terminal transition, or null while the trip is still running. */
+  terminalAt: string | null;
+  elapsedSeconds: number;
+  isTerminal: boolean;
+  /** Trail rows recorded for this delivery, before sampling. */
+  pointCount: number;
 };
 
 /**

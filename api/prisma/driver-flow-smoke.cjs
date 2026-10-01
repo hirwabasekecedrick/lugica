@@ -147,9 +147,9 @@ function check(name, ok, detail = "") {
     // 9. The driver now appears in the admin live list.
     const liveRes = await call(adminToken, "GET", "/tracking/drivers");
     const live = await liveRes.json();
-const me = live.find((d) => d.email === DRIVER_EMAIL);
+    const me = live.find((d) => d.email === DRIVER_EMAIL);
     check(
-      "admin sees the driver live after a ping",
+      "admin sees the driver live after a REST ping (gap #21 fixed)",
       Boolean(me),
       me ? `${me.trackingStatus} @ ${me.lastLatitude},${me.lastLongitude}` : "not listed",
     );
@@ -157,6 +157,51 @@ const me = live.find((d) => d.email === DRIVER_EMAIL);
       "live state includes the active delivery",
       Boolean(me?.activeDeliveryId === pending.id),
       `activeDeliveryId=${me?.activeDeliveryId} expected ${pending.id}`,
+    );
+
+    // 9b. Distance accumulation: a second ping at a plausible speed adds distance,
+    // while a repeat ping at the same spot does not.
+    const summaryBefore = await (
+      await call(driverToken, "GET", `/tracking/deliveries/${pending.id}/summary`)
+    ).json();
+
+    // ~110 m north: a realistic movement over a few seconds at ~30 km/h.
+    await call(driverToken, "POST", "/locations/ping", {
+      latitude: -1.9656,
+      longitude: 30.1,
+      accuracy: 8,
+      deliveryId: pending.id,
+    });
+    const summaryMoved = await (
+      await call(driverToken, "GET", `/tracking/deliveries/${pending.id}/summary`)
+    ).json();
+    check(
+      "distance increases after moving",
+      summaryMoved.distanceMeters > summaryBefore.distanceMeters,
+      `${summaryBefore.distanceMeters}m -> ${summaryMoved.distanceMeters}m`,
+    );
+
+    // An identical repeat fix is a parked vehicle: GPS drift must not inflate
+    // the total, so the leg is rejected as implausible.
+    await call(driverToken, "POST", "/locations/ping", {
+      latitude: -1.9656,
+      longitude: 30.1,
+      accuracy: 8,
+      deliveryId: pending.id,
+    });
+    const summaryParked = await (
+      await call(driverToken, "GET", `/tracking/deliveries/${pending.id}/summary`)
+    ).json();
+    check(
+      "parked position adds no distance",
+      summaryParked.distanceMeters === summaryMoved.distanceMeters,
+      `still ${summaryParked.distanceMeters}m`,
+    );
+    check(
+      "summary reports a distance in km as well",
+      typeof summaryParked.distanceKilometers === "number" &&
+        summaryParked.distanceKilometers >= 0,
+      `${summaryParked.distanceKilometers} km over ${summaryParked.pointCount} points`,
     );
 
     // 10. The trail recorded by the ping is readable by the driver.

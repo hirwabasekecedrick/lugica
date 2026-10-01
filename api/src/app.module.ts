@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { WsAwareThrottlerGuard } from './common/guards/ws-aware-throttler.guard.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import {
@@ -67,7 +68,9 @@ import { MediaModule } from './modules/media/media.module.js';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      // Not ThrottlerGuard directly: that guard also wraps WebSocket handlers and
+      // throws on them (docs/API-GAPS.md #23).
+      useClass: WsAwareThrottlerGuard,
     },
   ],
 })

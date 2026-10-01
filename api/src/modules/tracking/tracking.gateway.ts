@@ -220,6 +220,12 @@ export class TrackingGateway
   /**
    * A client subscribes to live updates for a specific delivery.
    * They join a room keyed by the delivery ID.
+   *
+   * Authorization is enforced here rather than trusted from the client: the
+   * room carries the driver's live position, so an unchecked join would let any
+   * authenticated user watch any delivery — including one belonging to another
+   * customer. The check is the same `assertDeliveryAccess` the REST trail and
+   * summary endpoints use, so the three cannot drift apart.
    */
   @SubscribeMessage('delivery:watch')
   async handleWatchDelivery(
@@ -228,6 +234,21 @@ export class TrackingGateway
   ): Promise<{ ok: boolean }> {
     if (!payload?.deliveryId) {
       client.emit('error', { message: 'deliveryId is required' });
+      return { ok: false };
+    }
+
+    const user = this.getUser(client);
+
+    try {
+      await this.trackingService.assertDeliveryAccess(payload.deliveryId, {
+        sub: user.sub,
+        role: user.role,
+      });
+    } catch {
+      // Deliberately does not distinguish "not found" from "not yours": a
+      // distinct message would confirm the existence of other customers'
+      // deliveries to anyone who can authenticate.
+      client.emit('error', { message: 'Not authorised to watch this delivery' });
       return { ok: false };
     }
 
