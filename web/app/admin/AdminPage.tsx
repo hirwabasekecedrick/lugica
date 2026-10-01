@@ -1,6 +1,15 @@
 "use client";
 
 import { AppFrame } from "@/app/components/AppFrame";
+import type { SidebarGroup } from "@/app/components/AppSidebarNav";
+import {
+  CatalogIcon,
+  DeliveryIcon,
+  OrdersIcon,
+  TrackingIcon,
+  UsersIcon,
+  VehicleIcon,
+} from "@/app/components/sidebar-icons";
 import UsersSection from "./sections/UsersSection";
 import VehiclesSection from "./sections/VehiclesSection";
 import DeliveriesSection from "./sections/DeliveriesSection";
@@ -35,29 +44,44 @@ export default function AdminPage({ section }: { section: AdminSection }) {
     (d) => !isStalePing(d.lastSeenAt),
   ).length;
 
-  const sidebarItems = NAV.map((item) => ({
-    href: item.href,
-    label: item.label,
-    badge:
-      item.section === "deliveries"
-        ? pendingDeliveries
-        : item.section === "vehicles"
-          ? activeVehicles
-          : item.section === "tracking"
-            ? liveDrivers
-            : undefined,
-  }));
+  const badges: Partial<Record<AdminSection, number>> = {
+    deliveries: pendingDeliveries,
+    vehicles: activeVehicles,
+    tracking: liveDrivers,
+  };
+
+  // Same icons and ordering as the warehouse sidebar's ADMINISTRATION group, so
+  // the two navs line up when an operator moves between /inventory and /admin.
+  const ICONS: Record<AdminSection, React.ElementType> = {
+    users: UsersIcon,
+    vehicles: VehicleIcon,
+    deliveries: DeliveryIcon,
+    orders: OrdersIcon,
+    tracking: TrackingIcon,
+  };
+
+  const sidebarGroups: SidebarGroup[] = [
+    {
+      title: "ADMINISTRATION",
+      items: NAV.map((item) => ({
+        key: item.section,
+        label: item.label,
+        href: item.href,
+        icon: ICONS[item.section],
+        badge: badges[item.section],
+      })),
+    },
+    {
+      title: "MANAGEMENT",
+      items: [{ key: "warehouse", label: "Warehouse", href: "/inventory", icon: CatalogIcon }],
+    },
+  ];
 
   return (
     <AppFrame
       title="Administration"
       subtitle="Users, fleet, deliveries and orders"
-      activeHref={NAV.find((n) => n.section === section)?.href ?? "/admin/users"}
-      sidebarItems={[
-        ...sidebarItems,
-        { href: "/inventory", label: "Warehouse" },
-        { href: "/shop", label: "Client Store" },
-      ]}
+      sidebarGroups={sidebarGroups}
     >
       {section === "users" && <UsersSection />}
       {section === "vehicles" && <VehiclesSection />}
