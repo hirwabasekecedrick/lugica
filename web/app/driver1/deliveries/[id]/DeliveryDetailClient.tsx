@@ -159,18 +159,6 @@ export default function DeliveryDetailClient({ id }: { id: string }) {
           </div>
         )}
 
-        {trackingActive && ["ASSIGNED", "PICKED_UP", "IN_TRANSIT"].includes(delivery.status) && (
-          <div className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-text-accent flex items-start gap-3">
-             <svg className="w-5 h-5 flex-shrink-0 mt-0.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            <div>
-              <strong>Live Tracking Active.</strong> Your location is being shared while this page is open.
-            </div>
-          </div>
-        )}
-
         <div className="bg-surface border border-border rounded-xl p-5 shadow-sm">
           <div className="flex justify-between items-center pb-4 border-b border-sunken mb-4">
              <h3 className="text-sm font-bold text-text">Current Status</h3>
@@ -225,21 +213,15 @@ export default function DeliveryDetailClient({ id }: { id: string }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <div className="bg-surface border border-border rounded-xl p-5 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-surface border border-border rounded-xl">
+           <div className="bg-surface border-none rounded-xl p-5 space-y-4">
              <h3 className="text-sm font-bold text-text border-b border-sunken pb-2">Pickup Location</h3>
              <p className="text-xs text-text">{delivery.pickupAddress}</p>
-             <div className="text-[10px] text-text-muted font-mono bg-sunken p-2 rounded">
-               Lat: {delivery.pickupLat} <br/> Lng: {delivery.pickupLng}
-             </div>
            </div>
            
-           <div className="bg-surface border border-border rounded-xl p-5 shadow-sm space-y-4">
+           <div className="bg-surface border-none rounded-xl p-5 space-y-4">
              <h3 className="text-sm font-bold text-text border-b border-sunken pb-2">Dropoff Location</h3>
              <p className="text-xs text-text">{delivery.dropoffAddress}</p>
-             <div className="text-[10px] text-text-muted font-mono bg-sunken p-2 rounded">
-               Lat: {delivery.dropoffLat} <br/> Lng: {delivery.dropoffLng}
-             </div>
            </div>
         </div>
         
@@ -248,14 +230,23 @@ export default function DeliveryDetailClient({ id }: { id: string }) {
              <h3 className="text-sm font-bold text-text border-b border-sunken pb-2">Client Details</h3>
              <p className="text-xs text-text font-medium">{delivery.client.name}</p>
              <p className="text-xs text-text-muted">{delivery.client.email}</p>
+             <div className="flex justify-between">
+              <div>
+                <p>Phone Number: {delivery.client.phone}</p>
+              </div>
+              <a href={`tel:${delivery.client.phone}`}>
+                <button className="bg-accent hover:bg-border text-on-accent font-bold text-xs px-4 py-2 rounded-lg transition-colors cursor-pointer">
+                  Call Client
+                </button>
+              </a>
+              </div>
           </div>
         )}
         </div>
 
         <div className="xl:col-span-7 space-y-6">
 
-        <div className="bg-surface border border-border rounded-xl p-5 shadow-sm space-y-4 overflow-hidden h-full flex flex-col">
-          <h3 className="text-sm font-bold text-text border-b border-sunken pb-2">Delivery Map</h3>
+        <div className="bg-surface border border-border rounded-xl p-0 shadow-sm space-y-4 overflow-hidden h-full flex flex-col">
           <div className="w-full flex-1 min-h-[500px] rounded-xl overflow-hidden relative bg-sunken border border-border">
             <LiveTrackingMap 
               deliveryId={delivery.id} 

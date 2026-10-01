@@ -204,7 +204,7 @@ export type GoodsReceipt = {
 
 /* ── Deliveries ───────────────────────────────────────────────────────────── */
 
-export type DeliveryParty = { id: string; name: string; email: string };
+export type DeliveryParty = { id: string; name: string; email: string; phone: string | null };
 
 export type DeliveryVehicle = { id: string; plateNumber: string; type: string };
 
