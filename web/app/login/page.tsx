@@ -25,8 +25,6 @@ export default function LoginPage() {
             <LoginCard />
           </Suspense>
         </div>
-
-        {/* Right Side: Full Height Hero Visual Panel (50% screen) */}
         <div className="hidden lg:flex w-full h-full items-center justify-center">
           <HeroPanel />
         </div>
