@@ -366,6 +366,39 @@ export function useAssignDelivery() {
   });
 }
 
+export function usePickupDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes?: string }) => deliveries.pickup(id, notes),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.deliveries() });
+      void qc.invalidateQueries({ queryKey: ["delivery"] });
+    },
+  });
+}
+
+export function useTransitDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes?: string }) => deliveries.transit(id, notes),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.deliveries() });
+      void qc.invalidateQueries({ queryKey: ["delivery"] });
+    },
+  });
+}
+
+export function useDeliverDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes?: string }) => deliveries.deliver(id, notes),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.deliveries() });
+      void qc.invalidateQueries({ queryKey: ["delivery"] });
+    },
+  });
+}
+
 export function useLogin() {
   const qc = useQueryClient();
 

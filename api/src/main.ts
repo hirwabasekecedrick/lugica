@@ -39,7 +39,7 @@ async function bootstrap(): Promise<void> {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, cleanupOpenApiDoc(document));
+  SwaggerModule.setup('docs', app, cleanupOpenApiDoc(document));
 
   // Start server using port from ConfigService
   const configService = app.get(ConfigService);

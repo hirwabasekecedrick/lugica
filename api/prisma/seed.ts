@@ -64,32 +64,58 @@ async function main() {
     clients.push(client);
   }
 
-  // Driver
-  const driverEmail = process.env.DRIVER_EMAIL || 'driver@lugica.com';
-  const driver = await prisma.user.upsert({
-    where: { email: driverEmail },
-    update: { passwordHash },
-    create: {
-      email: driverEmail,
-      name: 'Test Driver',
-      phone: '+250780000099',
-      passwordHash,
-      role: Role.DRIVER,
-      isActive: true,
-      licenseNumber: 'DL-123456',
-      isAvailable: true,
-    },
-  });
+  // Drivers
+  const driverEmails = [
+    process.env.DRIVER1_EMAIL || 'driver1@lugica.com',
+    process.env.DRIVER2_EMAIL || 'driver2@lugica.com',
+    process.env.DRIVER3_EMAIL || 'driver3@lugica.com',
+  ];
+  
+  const drivers = [];
+  for (let i = 0; i < driverEmails.length; i++) {
+    const d = await prisma.user.upsert({
+      where: { email: driverEmails[i] },
+      update: { passwordHash, isAvailable: i % 2 === 0 },
+      create: {
+        email: driverEmails[i],
+        name: `Test Driver ${i + 1}`,
+        phone: `+25078000009${i}`,
+        passwordHash,
+        role: Role.DRIVER,
+        isActive: true,
+        licenseNumber: `DL-123456-${i}`,
+        isAvailable: i % 2 === 0,
+      },
+    });
+    drivers.push(d);
+  }
 
-  // Vehicle
-  const vehicle = await prisma.vehicle.upsert({
+  // Vehicles
+  const companyVehicle = await prisma.vehicle.upsert({
     where: { plateNumber: 'RAB123A' },
-    update: {},
+    update: { assignedDriverId: drivers[0].id },
     create: {
       plateNumber: 'RAB123A',
       type: 'Truck',
       capacity: 1000,
       ownershipType: 'COMPANY',
+      assignedDriverId: drivers[0].id,
+    },
+  });
+
+  const individualVehicle = await prisma.vehicle.upsert({
+    where: { plateNumber: 'RAB123B' },
+    update: { 
+      ownedByDriverId: drivers[1].id,
+      assignedDriverId: drivers[1].id 
+    },
+    create: {
+      plateNumber: 'RAB123B',
+      type: 'Van',
+      capacity: 500,
+      ownershipType: 'INDIVIDUAL',
+      ownedByDriverId: drivers[1].id,
+      assignedDriverId: drivers[1].id,
     },
   });
 
@@ -205,6 +231,7 @@ async function main() {
         status: OrderStatus.PAID,
         totalMinorUnits: products[0].priceMinorUnits,
         currency: 'RWF',
+        deliveryId: 'd0000000-0000-0000-0000-000000000004',
         customerName: 'Test Client 1',
         customerEmail: 'client1@lugica.com',
         customerPhone: '+250780000011',
@@ -222,6 +249,94 @@ async function main() {
       },
     });
   }
+
+  console.log('Seeding Deliveries for Drivers...');
+
+  const deliveryIds = {
+    pending: 'd0000000-0000-0000-0000-000000000001',
+    assigned: 'd0000000-0000-0000-0000-000000000002',
+    pickedUp: 'd0000000-0000-0000-0000-000000000003',
+    inTransit: 'd0000000-0000-0000-0000-000000000004',
+    delivered: 'd0000000-0000-0000-0000-000000000005',
+    cancelled: 'd0000000-0000-0000-0000-000000000006',
+  };
+
+  const deliveryBase = {
+    clientId: clients[0].id,
+    pickupAddress: 'Warehouse A, Kigali',
+    pickupLat: -1.957,
+    pickupLng: 30.088,
+    dropoffAddress: 'Client Home, Kigali',
+    dropoffLat: -1.960,
+    dropoffLng: 30.100,
+    packageDetails: '1x Electronics',
+  };
+
+  await prisma.delivery.upsert({
+    where: { id: deliveryIds.pending },
+    update: {},
+    create: { ...deliveryBase, id: deliveryIds.pending, status: 'PENDING' }
+  });
+
+  await prisma.delivery.upsert({
+    where: { id: deliveryIds.assigned },
+    update: { driverId: drivers[0].id, vehicleId: companyVehicle.id, status: 'ASSIGNED' },
+    create: { ...deliveryBase, id: deliveryIds.assigned, status: 'ASSIGNED', driverId: drivers[0].id, vehicleId: companyVehicle.id }
+  });
+
+  await prisma.delivery.upsert({
+    where: { id: deliveryIds.pickedUp },
+    update: { driverId: drivers[0].id, vehicleId: companyVehicle.id, status: 'PICKED_UP' },
+    create: { ...deliveryBase, id: deliveryIds.pickedUp, status: 'PICKED_UP', driverId: drivers[0].id, vehicleId: companyVehicle.id }
+  });
+
+  await prisma.delivery.upsert({
+    where: { id: deliveryIds.inTransit },
+    update: { driverId: drivers[1].id, vehicleId: individualVehicle.id, status: 'IN_TRANSIT' },
+    create: { ...deliveryBase, id: deliveryIds.inTransit, status: 'IN_TRANSIT', driverId: drivers[1].id, vehicleId: individualVehicle.id }
+  });
+
+  await prisma.delivery.upsert({
+    where: { id: deliveryIds.delivered },
+    update: { driverId: drivers[0].id, vehicleId: companyVehicle.id, status: 'DELIVERED', deliveredAt: new Date() },
+    create: { ...deliveryBase, id: deliveryIds.delivered, status: 'DELIVERED', driverId: drivers[0].id, vehicleId: companyVehicle.id, deliveredAt: new Date() }
+  });
+
+  await prisma.delivery.upsert({
+    where: { id: deliveryIds.cancelled },
+    update: { driverId: drivers[1].id, vehicleId: individualVehicle.id, status: 'CANCELLED' },
+    create: { ...deliveryBase, id: deliveryIds.cancelled, status: 'CANCELLED', driverId: drivers[1].id, vehicleId: individualVehicle.id }
+  });
+
+  await prisma.delivery.upsert({
+    where: { id: 'd0000000-0000-0000-0000-000000000007' },
+    update: { driverId: drivers[2].id, vehicleId: companyVehicle.id, status: 'ASSIGNED' },
+    create: { ...deliveryBase, id: 'd0000000-0000-0000-0000-000000000007', status: 'ASSIGNED', driverId: drivers[2].id, vehicleId: companyVehicle.id }
+  });
+
+  console.log('Seeding Driver Locations...');
+  await prisma.driverLocation.deleteMany({
+    where: { deliveryId: deliveryIds.inTransit }
+  });
+
+  await prisma.driverLocation.createMany({
+    data: [
+      {
+        driverId: drivers[1].id,
+        deliveryId: deliveryIds.inTransit,
+        latitude: -1.958,
+        longitude: 30.089,
+        recordedAt: new Date(Date.now() - 10 * 60000), // 10 mins ago
+      },
+      {
+        driverId: drivers[1].id,
+        deliveryId: deliveryIds.inTransit,
+        latitude: -1.959,
+        longitude: 30.095,
+        recordedAt: new Date(Date.now() - 5 * 60000), // 5 mins ago
+      }
+    ]
+  });
 
   console.log('Seeding Complete!');
 }

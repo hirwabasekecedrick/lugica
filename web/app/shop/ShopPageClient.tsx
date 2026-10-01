@@ -73,7 +73,13 @@ export default function ShopPageClient() {
 
   const productsQuery = useProducts(listQuery);
 
-  const products = searching ? (searchQuery.data ?? []) : (productsQuery.data ?? []);
+  const listData = productsQuery.data as unknown as { data?: Product[] } | Product[];
+  const productsList = Array.isArray(listData) ? listData : (listData?.data ?? []);
+  
+  const searchData = searchQuery.data as unknown as { data?: Product[] } | Product[];
+  const searchList = Array.isArray(searchData) ? searchData : (searchData?.data ?? []);
+
+  const products = searching ? searchList : productsList;
 
   // Categories arrive as a tree; flatten it for the chip bar.
   const categories = useMemo(() => {

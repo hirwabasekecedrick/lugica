@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { readSession, type Session } from "@/lib/server/session";
-import { hasRole, WAREHOUSE_ROLES, ADMIN_ROLES, ANY_ROLES } from "@/lib/roles";
+import { hasRole, WAREHOUSE_ROLES, ADMIN_ROLES, ANY_ROLES, DRIVER_ROLES } from "@/lib/roles";
 
 /**
  * Server-side role gate for a route segment.
@@ -27,5 +27,6 @@ export async function requireRole(allowed: readonly Session["role"][]): Promise<
 export const requireWarehouse = () => requireRole(WAREHOUSE_ROLES);
 export const requireAdmin = () => requireRole(ADMIN_ROLES);
 export const requireAnyUser = () => requireRole(ANY_ROLES);
+export const requireDriver = () => requireRole(DRIVER_ROLES);
 
-export { WAREHOUSE_ROLES, ADMIN_ROLES, ANY_ROLES };
+export { WAREHOUSE_ROLES, ADMIN_ROLES, ANY_ROLES, DRIVER_ROLES };

@@ -19,7 +19,7 @@ export function AppSidebar({
   items,
   activeHref,
 }: {
-  items: { href: string; label: string; badge?: number }[];
+  items: { href: string; label: string; badge?: number; icon?: React.ElementType }[];
   activeHref: string;
 }) {
   const session = useSession();
@@ -71,7 +71,10 @@ export function AppSidebar({
                       : "text-text-muted hover:bg-sunken hover:text-text"
                   }`}
                 >
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-2.5">
+                    {item.icon && <item.icon className="w-4 h-4 flex-shrink-0" />}
+                    <span>{item.label}</span>
+                  </div>
                   {typeof item.badge === "number" && item.badge > 0 && (
                     <span className="text-[10px] font-bold bg-warning/20 text-warning px-1.5 py-0.2 rounded-full">
                       {item.badge}
@@ -112,7 +115,7 @@ export function AppFrame({
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-  sidebarItems: { href: string; label: string; badge?: number }[];
+  sidebarItems: { href: string; label: string; badge?: number; icon?: React.ElementType }[];
   activeHref: string;
   actions?: React.ReactNode;
 }) {
