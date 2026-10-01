@@ -36,4 +36,34 @@ export const deliveries = {
    */
   assign: (id: string, input: { driverId: string; vehicleId: string }) =>
     api.patch<Delivery>(`/deliveries/${id}/assign`, input),
+
+  /* ── Status transitions ─────────────────────────────────────────────────────
+   *
+   * The state machine is fixed (deliveries.service.ts:190-222):
+   *   PENDING    -> ASSIGNED  (admin assign only)
+   *   ASSIGNED   -> PICKED_UP    <- the driver's "accept"
+   *   PICKED_UP  -> IN_TRANSIT
+   *   IN_TRANSIT -> DELIVERED | FAILED
+   * CANCELLED is reachable from PENDING/ASSIGNED/PICKED_UP.
+   *
+   * Only the assigned driver or an admin may run these; a third driver gets a
+   * 403. Each takes an optional `notes` (max 500 chars) and writes a
+   * DeliveryStatusHistory row, and each broadcasts on the tracking gateway.
+   */
+
+  /** ASSIGNED -> PICKED_UP. The driver's accept action. */
+  pickup: (id: string, notes?: string) =>
+    api.patch<Delivery>(`/deliveries/${id}/pickup`, notes ? { notes } : {}),
+
+  /** PICKED_UP -> IN_TRANSIT. Start driving to the dropoff. */
+  transit: (id: string, notes?: string) =>
+    api.patch<Delivery>(`/deliveries/${id}/transit`, notes ? { notes } : {}),
+
+  /** IN_TRANSIT -> DELIVERED. Sets deliveredAt. */
+  deliver: (id: string, notes?: string) =>
+    api.patch<Delivery>(`/deliveries/${id}/deliver`, notes ? { notes } : {}),
+
+  /** IN_TRANSIT -> FAILED. Terminal. */
+  fail: (id: string, notes?: string) =>
+    api.patch<Delivery>(`/deliveries/${id}/fail`, notes ? { notes } : {}),
 };

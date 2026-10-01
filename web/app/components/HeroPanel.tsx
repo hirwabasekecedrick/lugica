@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function HeroPanel() {
   return (
-    <div className="relative w-full h-full rounded-[28px] lg:rounded-[32px] overflow-hidden border border-border shadow-2xl flex flex-col justify-end group">
+    <div className="relative w-full h-full overflow-hidden flex flex-col justify-end group">
       {/* Background Hero Image - Real-time Delivery Courier & GPS Map */}
       <Image
         src="/lugica_delivery_hero.png"

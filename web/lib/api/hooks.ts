@@ -14,12 +14,14 @@ import { procurement } from "./procurement";
 import { deliveries } from "./deliveries";
 import { vehicles, users, locations } from "./admin";
 import { auth } from "./auth";
+import { tracking } from "./tracking";
 import type {
   AdminProduct,
   Category,
   Delivery,
   GoodsReceipt,
   HydratedCart,
+  LocationPingInput,
   OrderStatus,
   Product,
   ProductQuery,
@@ -56,14 +58,18 @@ export const qk = {
   delivery: (id: string) => ["delivery", id] as const,
   vehicles: () => ["vehicles"] as const,
   users: (page?: number, role?: Role) => ["users", page ?? 1, role ?? null] as const,
+  activeDrivers: () => ["tracking", "drivers"] as const,
+  myTracking: () => ["tracking", "me"] as const,
+  trail: (deliveryId: string | null) => ["tracking", "trail", deliveryId ?? ""] as const,
 } as const;
 
 /* ── Catalog (public) ─────────────────────────────────────────────────────── */
 
 export function useProducts(query?: ProductQuery) {
-  return useQuery({
+  return useQuery<Product[]>({
     queryKey: qk.products(query),
-    queryFn: () => catalog.list(query),
+    // The endpoint is cursor-paginated; the shop renders a flat product list.
+    queryFn: async () => (await catalog.list(query)).data,
   });
 }
 
@@ -121,7 +127,8 @@ export function useLastPurchased() {
 export function useAdminProducts(page?: number) {
   return useQuery<AdminProduct[]>({
     queryKey: qk.adminProducts(page),
-    queryFn: () => inventory.list(page, 100),
+    // The endpoint is paginated; consumers want the flat product list.
+    queryFn: async () => (await inventory.list(page, 100)).data,
   });
 }
 
@@ -155,6 +162,78 @@ export function useUsers(page?: number, role?: Role) {
   return useQuery({
     queryKey: qk.users(page, role),
     queryFn: () => users.list(page, 25, role),
+  });
+}
+
+/* ── Tracking ──────────────────────────────────────────────────────────────── */
+
+/**
+ * ADMIN only. Polls as a fallback and recovery path for the socket: the gateway
+ * pushes `driversUpdate`, but a reconnect or a missed event would otherwise
+ * leave the map stale until reload.
+ */
+export function useActiveDrivers(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: qk.activeDrivers(),
+    queryFn: tracking.activeDrivers,
+    enabled: options?.enabled ?? true,
+    refetchInterval: 15_000,
+  });
+}
+
+/** DRIVER only. Cheap enough to poll; drives the driver's own status chip. */
+export function useMyTrackingState(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: qk.myTracking(),
+    queryFn: tracking.myState,
+    enabled: options?.enabled ?? true,
+    refetchInterval: 30_000,
+  });
+}
+
+/** The recorded GPS trail for a delivery, chronological. */
+export function useDeliveryTrail(deliveryId: string | null) {
+  return useQuery({
+    queryKey: qk.trail(deliveryId),
+    queryFn: () => tracking.trail(deliveryId as string),
+    enabled: Boolean(deliveryId),
+  });
+}
+
+/* ── Driver status transitions ─────────────────────────────────────────────── */
+
+/**
+ * A single hook for all four driver transitions, since they differ only in the
+ * endpoint and the label the UI shows.
+ */
+export function useDriverTransition() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      action,
+      notes,
+    }: {
+      id: string;
+      action: "pickup" | "transit" | "deliver" | "fail";
+      notes?: string;
+    }) => deliveries[action](id, notes),
+
+    onSuccess: () => {
+      // A transition changes the delivery row, so the list, the detail view and
+      // any admin's pending counts are all stale.
+      void qc.invalidateQueries({ queryKey: qk.deliveries() });
+      void qc.invalidateQueries({ queryKey: ["delivery"] });
+      void qc.invalidateQueries({ queryKey: ["tracking"] });
+    },
+  });
+}
+
+/** DRIVER only. `POST /locations/ping` is throttled to 5 req/s by the API. */
+export function useSendLocationPing() {
+  return useMutation({
+    mutationFn: (input: LocationPingInput) => tracking.ping(input),
   });
 }
 

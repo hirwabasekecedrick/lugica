@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { AdminProduct, Category, Product, ProductQuery } from "./types";
+import type { AdminProduct, Category, CursorPaginated, Paginated, Product, ProductQuery } from "./types";
 
 /**
  * Catalog (public) and admin inventory.
@@ -10,10 +10,11 @@ import type { AdminProduct, Category, Product, ProductQuery } from "./types";
  */
 
 export const catalog = {
-  /** Public list, ACTIVE only. */
-  list: (query?: ProductQuery) => api.get<Product[]>("/products", { query }),
+  /** Public list, ACTIVE only. Cursor-paginated. */
+  list: (query?: ProductQuery) =>
+    api.get<CursorPaginated<Product>>("/products", { query }),
 
-  /** Public search over name + sku + categoryName only. */
+  /** Public search over name + sku + categoryName only. Bare list. */
   search: (q: string, limit?: number) =>
     api.get<Product[]>("/products/search", { query: { q, limit } }),
 
@@ -24,20 +25,25 @@ export const catalog = {
   byId: (id: string) => api.get<Product>(`/products/${id}`),
 
   /**
-   * `GET /products/new-arrivals` is suspected broken — the service orders by
-   * `stockMovements: { _count: 'desc' }`, which is not valid Prisma relation
-   * ordering (catalog.service.ts:63-71). Omitted pending a fix.
-   * See docs/API-GAPS.md #11.
+   * New arrivals. Verified returning 200, and it orders by `createdAt: 'desc'`
+   * (catalog.service.ts:64), which is the correct recency ranking.
+   *
+   * One caveat: `skip: cursor ? 1 : 0` combined with `take: limit` makes
+   * pagination unreliable when items are inserted mid-scroll, which is the same
+   * reason `catalog.list` has the caveat noted above.
+   *
+   * Currently unused by any page; kept wired so the endpoint stays covered.
    */
+  newArrivals: () => api.get<CursorPaginated<Product>>("/products/new-arrivals"),
 
   /** Nested tree, not a flat list. */
   categories: () => api.get<Category[]>("/categories"),
 };
 
 export const inventory = {
-  /** Includes ARCHIVED products and the category relation. */
+  /** Includes ARCHIVED products and the category relation. Paginated. */
   list: (page?: number, limit?: number) =>
-    api.get<AdminProduct[]>("/admin/products", { query: { page, limit } }),
+    api.get<Paginated<AdminProduct>>("/admin/products", { query: { page, limit } }),
 
   byId: (id: string) => api.get<AdminProduct>(`/admin/products/${id}`),
 

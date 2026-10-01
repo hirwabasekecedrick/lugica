@@ -8,6 +8,10 @@ allowBuilds:
   prisma: true
   workerd: true
 
+minimumReleaseAgeExclude:
+  - '@nestjs/platform-socket.io@12.1.2'
+  - '@nestjs/websockets@12.1.2'
+
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
