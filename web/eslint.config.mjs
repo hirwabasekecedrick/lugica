@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone Node scripts (verification harnesses run with `node`, not part
+    // of the Next build). They are CommonJS by design so they can be invoked
+    // without a build step, which the TS rules for the app would reject.
+    "scripts/**",
   ]),
 ]);
 

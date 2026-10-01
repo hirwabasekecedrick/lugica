@@ -71,8 +71,11 @@ export default function LoginCard() {
     if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
       return nextPath;
     }
+// Each role gets the surface it actually works in. SHOP_MANAGER lands on the
+    // store deliberately: there is no warehouse page it is allowed to see.
+    if (role === "ADMIN") return "/inventory";
     if (role === "DRIVER") return "/driver";
-    return role === "ADMIN" || role === "SHOP_MANAGER" ? "/inventory" : "/shop";
+    return "/shop";
   }
 
   function handleSignIn(e: React.FormEvent) {

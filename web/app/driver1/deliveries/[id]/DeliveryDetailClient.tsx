@@ -130,8 +130,10 @@ export default function DeliveryDetailClient({ id }: { id: string }) {
         await deliverMutation.mutateAsync({ id });
         toast.success("Delivery updated", "Status marked as DELIVERED");
       }
-    } catch (err: any) {
-      toast.error("Update failed", err.message || "Failed to update delivery status");
+    } catch (err) {
+      // ApiError extends Error, so the API's own message survives the narrowing.
+      const message = err instanceof Error ? err.message : "";
+      toast.error("Update failed", message || "Failed to update delivery status");
     }
   };
 

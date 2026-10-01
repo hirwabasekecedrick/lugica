@@ -157,6 +157,16 @@ export type Paginated<T> = {
   meta: { total: number; page: number; limit: number; totalPages?: number };
 };
 
+/**
+ * Cursor-paginated endpoints. `nextCursor` is null on the last page, and is
+ * non-null whenever a full page came back — so it can be non-null on a page
+ * that is in fact the last one.
+ */
+export type CursorPaginated<T> = {
+  data: T[];
+  meta: { nextCursor: string | null };
+};
+
 /* ── Procurement ──────────────────────────────────────────────────────────── */
 
 export type Supplier = {
@@ -240,6 +250,57 @@ export type Delivery = {
   vehicle?: DeliveryVehicle;
   /** Only on `GET /deliveries/:id`. */
   statusHistory?: DeliveryStatusHistoryEntry[];
+};
+
+/* ── Tracking ──────────────────────────────────────────────────────────────── */
+
+/**
+ * Live driver state, read from Redis by the tracking service and pushed to the
+ * `admins` room over Socket.IO.
+ *
+ * Positions are optional because a driver can start tracking before the first
+ * ping arrives — `trackingStatus` becomes `available` immediately, so the
+ * caller must not assume a coordinate exists just because a driver is listed.
+ */
+export type TrackingStatus = "available" | "on_delivery" | "offline";
+
+export type DriverLiveState = {
+  driverId: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  vehiclePlateNumber: string | null;
+  activeDeliveryId: string | null;
+  trackingStatus: TrackingStatus;
+  lastLatitude: number | null;
+  lastLongitude: number | null;
+  lastAccuracy: number | null;
+  lastSeenAt: string | null;
+  trackingStartedAt: string | null;
+};
+
+/** One point of a delivery's recorded GPS trail, chronologically ordered. */
+export type TrailPoint = {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  recordedAt: string;
+};
+
+/**
+ * `GET /tracking/me` returns this envelope instead of a DriverLiveState when
+ * the driver has no Redis entry yet, so the shape is deliberately loose.
+ */
+export type MyTrackingState =
+  | (Partial<DriverLiveState> & { trackingStatus: TrackingStatus; message?: string })
+  | DriverLiveState;
+
+/** Body for `POST /locations/ping` (driver only, 5 req/s). */
+export type LocationPingInput = {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  deliveryId?: string;
 };
 
 /* ── Vehicles ─────────────────────────────────────────────────────────────── */

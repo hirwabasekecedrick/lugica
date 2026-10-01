@@ -1,4 +1,4 @@
-import { PrismaClient, Role, ProductStatus, StockMovementType, OrderStatus, ReferenceType } from '@prisma/client';
+import { PrismaClient, Role, ProductStatus, StockMovementType, OrderStatus, ReferenceType, DeliveryStatus } from '@prisma/client';
 import { hash } from 'bcryptjs';
 import * as crypto from 'crypto';
 
@@ -269,7 +269,10 @@ async function main() {
     dropoffAddress: 'Client Home, Kigali',
     dropoffLat: -1.960,
     dropoffLng: 30.100,
-    packageDetails: '1x Electronics',
+    // NOTE: no `packageDetails` here. The Delivery model has no such column
+    // (see docs/API-GAPS.md #17), so passing it makes every one of these
+    // upserts throw PrismaClientValidationError. Only CreateDeliveryDto carries
+    // the field, and the service discards it.
   };
 
   await prisma.delivery.upsert({
@@ -313,6 +316,46 @@ async function main() {
     update: { driverId: drivers[2].id, vehicleId: companyVehicle.id, status: 'ASSIGNED' },
     create: { ...deliveryBase, id: 'd0000000-0000-0000-0000-000000000007', status: 'ASSIGNED', driverId: drivers[2].id, vehicleId: companyVehicle.id }
   });
+
+  console.log('Seeding Delivery Status History...');
+  // The upserts above set each delivery's final status directly, so no history
+  // rows exist for them. The admin deliveries board and the driver's journey
+  // panel both read DeliveryStatusHistory, so reconstruct the implied chain.
+  // Deleted first because the step is idempotent-by-upsert, unlike this one.
+  const historySeed: Array<{
+    deliveryId: string;
+    fromStatus: DeliveryStatus | null;
+    toStatus: DeliveryStatus;
+    changedByUserId: string;
+    notes: string;
+  }> = (
+    [
+      [deliveryIds.assigned, 'PENDING', 'ASSIGNED', drivers[0].id],
+      [deliveryIds.pickedUp, 'PENDING', 'ASSIGNED', drivers[0].id],
+      [deliveryIds.pickedUp, 'ASSIGNED', 'PICKED_UP', drivers[0].id],
+      [deliveryIds.inTransit, 'PENDING', 'ASSIGNED', drivers[1].id],
+      [deliveryIds.inTransit, 'ASSIGNED', 'PICKED_UP', drivers[1].id],
+      [deliveryIds.inTransit, 'PICKED_UP', 'IN_TRANSIT', drivers[1].id],
+      [deliveryIds.delivered, 'PENDING', 'ASSIGNED', drivers[0].id],
+      [deliveryIds.delivered, 'ASSIGNED', 'PICKED_UP', drivers[0].id],
+      [deliveryIds.delivered, 'PICKED_UP', 'IN_TRANSIT', drivers[0].id],
+      [deliveryIds.delivered, 'IN_TRANSIT', 'DELIVERED', drivers[0].id],
+      [deliveryIds.cancelled, 'PENDING', 'ASSIGNED', drivers[1].id],
+      [deliveryIds.cancelled, 'ASSIGNED', 'CANCELLED', drivers[1].id],
+      ['d0000000-0000-0000-0000-000000000007', 'PENDING', 'ASSIGNED', drivers[2].id],
+    ] as Array<[string, DeliveryStatus, DeliveryStatus, string]>
+  ).map(([deliveryId, fromStatus, toStatus, changedByUserId]) => ({
+    deliveryId,
+    fromStatus,
+    toStatus,
+    changedByUserId,
+    notes: 'Seeded',
+  }));
+
+  await prisma.deliveryStatusHistory.deleteMany({
+    where: { deliveryId: { in: [...Object.values(deliveryIds), 'd0000000-0000-0000-0000-000000000007'] } },
+  });
+  await prisma.deliveryStatusHistory.createMany({ data: historySeed });
 
   console.log('Seeding Driver Locations...');
   await prisma.driverLocation.deleteMany({
