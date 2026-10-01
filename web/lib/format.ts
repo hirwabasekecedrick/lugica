@@ -151,3 +151,48 @@ const DELIVERY_STATUS_LABELS: Record<string, string> = {
 export function deliveryStatusLabel(status: string): string {
   return DELIVERY_STATUS_LABELS[status] ?? status;
 }
+
+/* ── Tracking freshness ────────────────────────────────────────────────────── */
+
+/**
+ * A driver is treated as stale once this much time passes without a location
+ * ping. It matches the Redis TTL the API sets on `driver:{id}` (120s), so past
+ * this point the driver has already dropped out of `GET /tracking/drivers` —
+ * but the last known position is still worth showing rather than deleting.
+ */
+export const STALE_AFTER_MS = 120_000;
+
+/** Age of a ping in ms, or null when there is no usable timestamp. */
+export function msSince(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const at = new Date(iso).getTime();
+  if (Number.isNaN(at)) return null;
+  return Math.max(0, Date.now() - at);
+}
+
+/** True when the last ping is older than STALE_AFTER_MS (or is missing). */
+export function isStalePing(iso: string | null | undefined): boolean {
+  const age = msSince(iso);
+  return age === null || age > STALE_AFTER_MS;
+}
+
+/**
+ * Relative age of the last ping: "just now", "45s ago", "6 min ago",
+ * "Stale". Drives both the driver list and the "Stale" marker badge.
+ */
+export function freshnessLabel(iso: string | null | undefined): string {
+  const age = msSince(iso);
+  if (age === null) return "Stale";
+  if (age > STALE_AFTER_MS) return "Stale";
+  if (age < 10_000) return "just now";
+
+  const seconds = Math.round(age / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+
+  return `${Math.round(seconds / 60)} min ago`;
+}
+
+/** Compact "12.34, 56.78" for debugging and marker alt text. */
+export function formatCoords(latitude: number, longitude: number): string {
+  return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+}

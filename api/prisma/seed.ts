@@ -1,4 +1,4 @@
-import { PrismaClient, Role, ProductStatus, StockMovementType, OrderStatus, ReferenceType } from '@prisma/client';
+import { PrismaClient, Role, ProductStatus, StockMovementType, OrderStatus, ReferenceType, DeliveryStatus } from '@prisma/client';
 import { hash } from 'bcryptjs';
 import * as crypto from 'crypto';
 
@@ -250,6 +250,7 @@ async function main() {
     });
   }
 
+<<<<<<< HEAD
   console.log('Seeding Deliveries for Drivers...');
 
   const deliveryIds = {
@@ -269,7 +270,10 @@ async function main() {
     dropoffAddress: 'Client Home, Kigali',
     dropoffLat: -1.960,
     dropoffLng: 30.100,
-    packageDetails: '1x Electronics',
+    // NOTE: no `packageDetails` here. The Delivery model has no such column
+    // (see docs/API-GAPS.md #17), so passing it makes every one of these
+    // upserts throw PrismaClientValidationError. Only CreateDeliveryDto carries
+    // the field, and the service discards it.
   };
 
   await prisma.delivery.upsert({
@@ -314,6 +318,46 @@ async function main() {
     create: { ...deliveryBase, id: 'd0000000-0000-0000-0000-000000000007', status: 'ASSIGNED', driverId: drivers[2].id, vehicleId: companyVehicle.id }
   });
 
+  console.log('Seeding Delivery Status History...');
+  // The upserts above set each delivery's final status directly, so no history
+  // rows exist for them. The admin deliveries board and the driver's journey
+  // panel both read DeliveryStatusHistory, so reconstruct the implied chain.
+  // Deleted first because the step is idempotent-by-upsert, unlike this one.
+  const historySeed: Array<{
+    deliveryId: string;
+    fromStatus: DeliveryStatus | null;
+    toStatus: DeliveryStatus;
+    changedByUserId: string;
+    notes: string;
+  }> = (
+    [
+      [deliveryIds.assigned, 'PENDING', 'ASSIGNED', drivers[0].id],
+      [deliveryIds.pickedUp, 'PENDING', 'ASSIGNED', drivers[0].id],
+      [deliveryIds.pickedUp, 'ASSIGNED', 'PICKED_UP', drivers[0].id],
+      [deliveryIds.inTransit, 'PENDING', 'ASSIGNED', drivers[1].id],
+      [deliveryIds.inTransit, 'ASSIGNED', 'PICKED_UP', drivers[1].id],
+      [deliveryIds.inTransit, 'PICKED_UP', 'IN_TRANSIT', drivers[1].id],
+      [deliveryIds.delivered, 'PENDING', 'ASSIGNED', drivers[0].id],
+      [deliveryIds.delivered, 'ASSIGNED', 'PICKED_UP', drivers[0].id],
+      [deliveryIds.delivered, 'PICKED_UP', 'IN_TRANSIT', drivers[0].id],
+      [deliveryIds.delivered, 'IN_TRANSIT', 'DELIVERED', drivers[0].id],
+      [deliveryIds.cancelled, 'PENDING', 'ASSIGNED', drivers[1].id],
+      [deliveryIds.cancelled, 'ASSIGNED', 'CANCELLED', drivers[1].id],
+      ['d0000000-0000-0000-0000-000000000007', 'PENDING', 'ASSIGNED', drivers[2].id],
+    ] as Array<[string, DeliveryStatus, DeliveryStatus, string]>
+  ).map(([deliveryId, fromStatus, toStatus, changedByUserId]) => ({
+    deliveryId,
+    fromStatus,
+    toStatus,
+    changedByUserId,
+    notes: 'Seeded',
+  }));
+
+  await prisma.deliveryStatusHistory.deleteMany({
+    where: { deliveryId: { in: [...Object.values(deliveryIds), 'd0000000-0000-0000-0000-000000000007'] } },
+  });
+  await prisma.deliveryStatusHistory.createMany({ data: historySeed });
+
   console.log('Seeding Driver Locations...');
   await prisma.driverLocation.deleteMany({
     where: { deliveryId: deliveryIds.inTransit }
@@ -337,6 +381,115 @@ async function main() {
       }
     ]
   });
+=======
+  // Deliveries
+  //
+  // Without these the tracking and driver views have nothing to render: the map
+  // needs coordinates and the driver's three lists (ASSIGNED to accept,
+  // IN_TRANSIT as the current journey, DELIVERED as history) need one delivery
+  // in each state.
+  //
+  // Guarded by a count rather than an upsert because Delivery has no natural
+  // unique key, and the seed is expected to be re-runnable. Note that the
+  // receipts/orders above use plain `create` for their items and rows, so this
+  // block is deliberately the only idempotent part.
+  console.log('Seeding Deliveries...');
+  const existingDeliveries = await prisma.delivery.count();
+  if (existingDeliveries === 0) {
+    // Kigali-area coordinates, so the OSM tiles land on the city.
+    const deliveryFixtures: Array<{
+      status: DeliveryStatus;
+      driverId: string | null;
+      vehicleId: string | null;
+      dropoffAddress: string;
+      dropoffLat: number;
+      dropoffLng: number;
+    }> = [
+      {
+        status: DeliveryStatus.PENDING,
+        driverId: null,
+        vehicleId: null,
+        dropoffAddress: 'KN 5 Rd, Kigali',
+        dropoffLat: -1.9441,
+        dropoffLng: 30.0619,
+      },
+      {
+        status: DeliveryStatus.ASSIGNED,
+        driverId: driver.id,
+        vehicleId: vehicle.id,
+        dropoffAddress: 'Remera, Kigali',
+        dropoffLat: -1.9578,
+        dropoffLng: 30.1218,
+      },
+      {
+        status: DeliveryStatus.IN_TRANSIT,
+        driverId: driver.id,
+        vehicleId: vehicle.id,
+        dropoffAddress: 'Nyamirambo, Kigali',
+        dropoffLat: -1.9826,
+        dropoffLng: 30.0446,
+      },
+      {
+        status: DeliveryStatus.DELIVERED,
+        driverId: driver.id,
+        vehicleId: vehicle.id,
+        dropoffAddress: 'Gikondo, Kigali',
+        dropoffLat: -1.9789,
+        dropoffLng: 30.0723,
+      },
+    ];
+
+    for (const fixture of deliveryFixtures) {
+      const created = await prisma.delivery.create({
+        data: {
+          clientId: clients[0].id,
+          pickupAddress: 'Lugica warehouse, Kigali',
+          pickupLat: -1.9497,
+          pickupLng: 30.0925,
+          dropoffAddress: fixture.dropoffAddress,
+          dropoffLat: fixture.dropoffLat,
+          dropoffLng: fixture.dropoffLng,
+          status: fixture.status,
+          driverId: fixture.driverId,
+          vehicleId: fixture.vehicleId,
+          ...(fixture.status === DeliveryStatus.DELIVERED
+            ? { deliveredAt: new Date(Date.now() - 3600000) }
+            : {}),
+        },
+      });
+
+      // Mirror the transitions the API would have written, so the driver's
+      // history panel is not empty on a fresh database.
+      if (fixture.status === DeliveryStatus.IN_TRANSIT) {
+        await prisma.deliveryStatusHistory.createMany({
+          data: [
+            {
+              deliveryId: created.id,
+              fromStatus: DeliveryStatus.PENDING,
+              toStatus: DeliveryStatus.ASSIGNED,
+              changedByUserId: admin.id,
+              notes: 'Seeded assignment',
+            },
+            {
+              deliveryId: created.id,
+              fromStatus: DeliveryStatus.ASSIGNED,
+              toStatus: DeliveryStatus.PICKED_UP,
+              changedByUserId: driver.id,
+              notes: 'Seeded pickup',
+            },
+            {
+              deliveryId: created.id,
+              fromStatus: DeliveryStatus.PICKED_UP,
+              toStatus: DeliveryStatus.IN_TRANSIT,
+              changedByUserId: driver.id,
+              notes: 'Seeded transit',
+            },
+          ],
+        });
+      }
+    }
+  }
+>>>>>>> 1ac66812de17e776c6489336e4b1fdd19d9122ba
 
   console.log('Seeding Complete!');
 }

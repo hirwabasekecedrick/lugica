@@ -21,7 +21,7 @@ the changes that would let the frontend do the right thing instead of the fallba
 | 1 | blocker | Auth | No `GET /auth/me`; login returns tokens only |
 | 2 | blocker | Checkout | `POST /orders/checkout` takes no body; no address or payment fields on `Order` |
 | 3 | blocker | Orders | `markOrderPaid` has no controller route — orders can never be paid |
-| 4 | blocker | Catalog | `getNewArrivals` orders by an invalid Prisma relation |
+| 4 | withdrawn | Catalog | `getNewArrivals` was reported broken twice; it is not (see #4) |
 | 5 | blocker | Media | No image upload endpoint; `images[].url` must be an absolute URL |
 | 6 | degraded | Cart | `GET /cart` omits the `product` relation |
 | 7 | degraded | Wishlist | `GET /wishlist` includes `product` but not `product.images` |
@@ -37,8 +37,10 @@ the changes that would let the frontend do the right thing instead of the fallba
 | 17 | degraded | Deliveries | `CreateDeliveryDto` requires fields the model discards |
 | 18 | polish | Catalog | Products cannot be deleted, only archived |
 | 19 | polish | Pagination | Inconsistent shapes across endpoints; no `totalPages` on orders; catalog cursor never returns the next cursor |
-| 20 | polish | Seed | No `DRIVER` users and no vehicles |
-| 21 | polish | Driver surfaces | No driver-facing web/mobile UI; `POST /locations/ping` is unused |
+| 20 | polish | Seed | Seed creates no deliveries, so tracking and driver views start empty |
+| 21 | blocker | Tracking | `POST /locations/ping` never populates the live-driver state the admin map reads |
+| 22 | degraded | Tracking | Socket gateway shares `jwt.accessSecret`, with no purpose or audience claim |
+| 23 | blocker | Tracking | Global `ThrottlerGuard` throws on WebSocket handlers; `tracking:start` and `tracking:stop` never run |
 
 ---
 
@@ -100,19 +102,23 @@ explicit note that payment confirmation is handled out of band.
 
 ---
 
-### 4. `getNewArrivals` orders by an invalid Prisma relation
+### 4. ~~`getNewArrivals` is broken~~ — withdrawn, not a gap
 
-**Location:** `api/src/modules/catalog/catalog.service.ts:63-71`
+**Location:** `api/src/modules/catalog/catalog.service.ts:58-73`
 
-The query orders by `stockMovements: { _count: 'desc' }`. Prisma does not support ordering by
-a relation's count in this form, and the surrounding code comment already flags
-uncertainty. This endpoint appears to 500.
+Two earlier revisions of this document claimed this endpoint was a blocker that 500s because
+it "orders by an invalid Prisma relation" (`stockMovements: { _count: 'desc' }`), and then
+that it ranked by movement count rather than date. **Both claims were wrong**, and neither is
+a gap.
 
-**Web symptom:** the storefront's "New Arrivals" section was omitted entirely rather than
-risk a broken request on the main page.
+Verified against the running API: `GET /products/new-arrivals` returns `200`, and the service
+orders by `createdAt: 'desc'` (`catalog.service.ts:64`) — the correct recency ranking. There
+is no relation-count ordering anywhere in the query.
 
-**Requested:** fix the order clause — for example, a raw SQL `GROUP BY productId` ordered
-by `COUNT(*)`, or an order by `createdAt DESC` if recency is the intent.
+The only real observation left is that its cursor handling is fragile
+(`skip: cursor ? 1 : 0` with `take: limit`, line 62), which can skip or repeat an item when
+rows are inserted mid-scroll. That is already covered by the pagination entry (#19) and is
+not a blocker.
 
 ---
 
@@ -343,31 +349,120 @@ the first page in practice, since there is no way to request the next one.
 
 ---
 
-### 20. Seed creates no `DRIVER` users and no vehicles
+### 20. Seed creates no deliveries
 
 **Location:** `api/prisma/seed.ts`
 
-The seed creates 1 admin, 1 shop manager, and 3 clients. Nothing has `Role.DRIVER`, and
-there are no `Vehicle` rows.
+**Corrected:** an earlier revision claimed the seed produced no `DRIVER` users and no vehicles.
+Both already existed. The real gap is deliveries: `prisma.delivery` was empty, so live
+tracking and the driver views had nothing to render — the map needs coordinates, and the
+driver's three lists need one delivery in each state.
 
-**Web symptom:** on a fresh database, `/admin/deliveries` cannot be exercised — the assign
-form shows "No active drivers. Create one under Users & Drivers." The warehouse and admin
-surfaces were built in dependency order for this reason: **Users → Vehicles → Deliveries**.
+**Fixed on the web side:** `prisma/seed.ts` now also seeds four deliveries
+(`PENDING`, `ASSIGNED`, `IN_TRANSIT`, `DELIVERED`) with Kigali-area coordinates and matching
+`DeliveryStatusHistory` rows, guarded by a count so re-running is safe. It deliberately does
+not use plain `create` for nested rows, because the receipts/orders sections above it already
+do and would duplicate.
 
-**Requested:** seed at least one driver and one company vehicle so the fleet flow is
-testable out of the box.
+**Still true, and worth a fix:** the seed's goods receipts, stock movements and orders use
+plain `create`, so `prisma db seed` is **not idempotent** — a second run duplicates rows.
+Everything below the users block should follow the delivery pattern.
 
 ---
 
-### 21. No driver-facing surface
+### 21. `POST /locations/ping` never populates the live-driver state
 
-**Location:** `api/src/modules/locations/locations.controller.ts`
+**Location:** `api/src/modules/locations/locations.service.ts:29-30` vs
+`api/src/modules/tracking/tracking.service.ts:11-14, :178-191`
 
-`POST /locations/ping` is `DRIVER`-only and throttled to 5 requests per second. The web app
-does not implement a driver UI and does not call this endpoint.
+This is the most consequential gap found while building live tracking, and it is a genuine
+bug rather than a missing feature. Two subsystems write driver positions to Redis under
+**different key namespaces, and only one of them is ever read**:
 
-**Requested:** confirm this belongs to a separate mobile client. If drivers are expected to
-use the web app, the role set needs a dedicated route tree and a map integration.
+| Writer | Redis keys | Read by |
+|---|---|---|
+| `POST /locations/ping` | `driver:location:{id}` (TTL **60s**) | nothing |
+| Socket `tracking:start` / `locationUpdate` | `tracking:driver:{id}` (TTL **120s**) + `tracking:active_drivers` | `GET /tracking/drivers`, `GET /tracking/drivers/:id` |
+
+`getAllActiveDrivers` reads the members of `tracking:active_drivers` and then fetches
+`tracking:driver:{id}` for each. `ping` writes neither, so **a driver who only ever pings is
+invisible to the admin map**, even though their trip is correctly recorded in Postgres and
+readable through `GET /tracking/deliveries/:id/trail`.
+
+Verified end to end: a driver pinged at `(-1.9666, 30.1)` bound to an active delivery — ping
+`201`, trail length `1`, but `GET /tracking/drivers` returned `[]` for that driver.
+
+**Web symptom:** the driver app prefers the socket and falls back to REST pings when the
+websocket is blocked. The fallback preserves the trail but does **not** keep the driver
+visible, so `/driver` states this to the user outright ("administrators will not see you on
+the map until it recovers") rather than appearing to work.
+
+**Requested:** have `ping` call the same state writer the socket uses — i.e. make
+`LocationsService.ping` update `tracking:driver:{id}` and add the id to
+`tracking:active_drivers`, and reconcile the two TTLs (60s vs 120s). `ping` is also the only
+path available to a client that cannot hold a websocket open, so it should be authoritative.
+
+---
+
+### 23. Global `ThrottlerGuard` throws on WebSocket handlers
+
+**Location:** `api/src/app.module.ts` (`ThrottlerGuard` registered as `APP_GUARD`),
+surfacing from `@nestjs/throttler@6.7.1` `throttler.guard.ts:267` (`setResponseHeader`)
+
+`ThrottlerGuard` is registered globally via `APP_GUARD`, so it also wraps every
+`@SubscribeMessage` handler on `TrackingGateway`. It assumes an HTTP execution context and calls
+`.header` on `context.switchToHttp().getResponse()`, which is `undefined` in a WS context:
+
+```
+[WsExceptionFilter] WebSocket error: Cannot read properties of undefined (reading 'header')
+    at ThrottlerGuard.setResponseHeader (throttler.guard.ts:267:20)
+    at ThrottlerGuard.handleRequest (throttler.guard.ts:224:12)
+    at GuardsConsumer.tryActivate (guards-consumer.js:19:17)
+```
+
+`WsExceptionFilter` catches it and emits an `error` event, so the handler body **never executes**
+and the failure is otherwise silent.
+
+Measured behaviour, one message at a time against the running gateway:
+
+| Gateway message | Result |
+|---|---|
+| `tracking:start` | throws — no `trackingState` reply |
+| `tracking:stop` | throws |
+| `locationUpdate` | works |
+
+So a driver can never explicitly start or stop tracking. They still become visible on the admin
+map, but only as a side effect: `handleLocationUpdate` calls `startTracking` internally when no
+live state exists.
+
+**Web symptom:** `/driver` emits `tracking:start` on "Go online" and it fails. The app
+compensates on three fronts — it still works (the first ping registers the driver), it surfaces
+the gateway's `error` event to the driver instead of silently claiming success, and
+`GET /tracking/me` polling reports the real server-side state rather than the local toggle.
+
+**Requested:** exclude the gateway from the throttler, or make `ThrottlerGuard` context-aware
+(skip `setResponseHeader` when `getResponse()` is undefined). Rate limiting a socket handler
+needs a different key strategy anyway, since there is no response object to attach headers to.
+
+---
+
+### 22. The socket gateway shares `jwt.accessSecret`
+
+**Location:** `api/src/modules/tracking/tracking.module.ts:19`, `tracking.gateway.ts:298-311`
+
+`TrackingGateway` verifies handshakes with the shared `JwtService`, which is configured from
+`jwt.accessSecret`. There is no separate socket secret, no `typ`/`aud` claim, and no check
+that the token was issued for socket use. Any valid access token therefore authenticates a
+socket, and the gateway cannot tell a socket token from a REST one.
+
+**Web symptom:** the web app keeps its main access token in an httpOnly cookie and never
+exposes it to browser JavaScript. To authenticate the socket it mints a separate 5-minute
+token from `/api/socket-token`, signed with the same secret and carrying the full
+`{ sub, email, role }` payload the gateway reads, plus an advisory `purpose: "socket"`
+claim. The claim is decorative today — it exists so the API can enforce it later.
+
+**Requested:** give the gateway its own secret (or at least require and verify an audience
+or `typ` claim), so a token minted for the socket cannot be replayed against REST endpoints.
 
 ---
 

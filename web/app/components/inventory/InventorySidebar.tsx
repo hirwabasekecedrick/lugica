@@ -105,6 +105,7 @@ export default function InventorySidebar({
     { href: "/admin/vehicles", label: "Vehicles", icon: VehicleIcon, badge: activeVehicles },
     { href: "/admin/deliveries", label: "Deliveries", icon: DeliveryIcon, badge: pendingDeliveries },
     { href: "/admin/orders", label: "Orders", icon: OrdersIcon },
+    { href: "/admin/tracking", label: "Live Tracking", icon: TrackingIcon },
   ];
 
   const sidebarContent = (
@@ -468,6 +469,16 @@ function OrdersIcon({ className }: { className?: string }) {
       <path d="M4 2.5h9L17 6v11a1 1 0 01-1 1H4a1 1 0 01-1-1v-13a1 1 0 011-1z" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M13 2.5V6h4" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M6.5 10h7M6.5 13h5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function TrackingIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <circle cx="10" cy="10" r="2.5" />
+      <path d="M10 1.5v3M10 15.5v3M1.5 10h3M15.5 10h3" strokeLinecap="round" />
+      <circle cx="10" cy="10" r="6.5" strokeDasharray="2 2.5" />
     </svg>
   );
 }
